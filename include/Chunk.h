@@ -8,7 +8,14 @@ enum BlockType {
     GRASS,
     STONE,
     WOOD,
-    LEAF
+    LEAF,
+    SAND
+};
+
+struct BlockTexture {
+    int top;
+    int side;
+    int bottom;
 };
 
 struct Block {
@@ -19,6 +26,9 @@ struct Block {
 class Chunk {
 public:
     std::vector<Block> blocks;
+
+    static const int CHUNK_SIZE = 16;
+
     Chunk();
 
     void generate();

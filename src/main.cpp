@@ -10,15 +10,15 @@
 #include "../include/Camera.h"
 #include "../include/Shader.h"
 
-const unsigned int SCR_WIDTH = 800;
-const unsigned int SCR_HEIGHT = 600;
+const unsigned int SCR_WIDTH = 1920;
+const unsigned int SCR_HEIGHT = 1080;
 
 Player player;
 Camera camera;
 bool firstMouse = true;
 
 void processInput(GLFWwindow *window, float deltaTime) {
-    float speed = 3.0f * deltaTime;
+    float speed = 10.0f * deltaTime;
     if(glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
         player.move(camera.front * speed);
     if(glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
@@ -34,7 +34,8 @@ void processInput(GLFWwindow *window, float deltaTime) {
 }
 
 void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
-    static float lastX = 400, lastY = 300;
+    static float lastX = SCR_WIDTH / 2.0f;
+    static float lastY = SCR_HEIGHT / 2.0f;
     static bool firstMouse = true;
 
     if(firstMouse) { lastX = xpos; lastY = ypos; firstMouse = false; }
