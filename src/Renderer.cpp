@@ -69,47 +69,48 @@ void Renderer::setupCube() {
 
     
     Vertex vertices[] = {
-        {{-0.5f, -0.5f, -0.5f}, {0.0f, 0.0f}, SIDES},
-        {{ 0.5f, -0.5f, -0.5f}, {1.0f, 0.0f}, SIDES},
-        {{ 0.5f,  0.5f, -0.5f}, {1.0f, 1.0f}, SIDES},
-        {{ 0.5f,  0.5f, -0.5f}, {1.0f, 1.0f}, SIDES},
-        {{-0.5f,  0.5f, -0.5f}, {0.0f, 1.0f}, SIDES},
-        {{-0.5f, -0.5f, -0.5f}, {0.0f, 0.0f}, SIDES},
-
-        {{-0.5f, -0.5f,  0.5f}, {0.0f, 0.0f}, SIDES},
-        {{ 0.5f, -0.5f,  0.5f}, {1.0f, 0.0f}, SIDES},
-        {{ 0.5f,  0.5f,  0.5f}, {1.0f, 1.0f}, SIDES},
-        {{ 0.5f,  0.5f,  0.5f}, {1.0f, 1.0f}, SIDES},
-        {{-0.5f,  0.5f,  0.5f}, {0.0f, 1.0f}, SIDES},
-        {{-0.5f, -0.5f,  0.5f}, {0.0f, 0.0f}, SIDES},
-
-        {{-0.5f,  0.5f,  0.5f}, {1.0f, 1.0f}, UP},
-        {{-0.5f,  0.5f, -0.5f}, {1.0f, 0.0f}, UP},
-        {{ 0.5f,  0.5f, -0.5f}, {0.0f, 0.0f}, UP},
-        {{ 0.5f,  0.5f, -0.5f}, {0.0f, 0.0f}, UP},
-        {{ 0.5f,  0.5f,  0.5f}, {0.0f, 1.0f}, UP},
-        {{-0.5f,  0.5f,  0.5f}, {1.0f, 1.0f}, UP},
-
-        {{-0.5f, -0.5f,  0.5f}, {1.0f, 1.0f}, DOWN},
-        {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f}, DOWN},
-        {{ 0.5f, -0.5f, -0.5f}, {0.0f, 0.0f}, DOWN},
-        {{ 0.5f, -0.5f, -0.5f}, {0.0f, 0.0f}, DOWN},
-        {{ 0.5f, -0.5f,  0.5f}, {0.0f, 1.0f}, DOWN},
-        {{-0.5f, -0.5f,  0.5f}, {1.0f, 1.0f}, DOWN},
-
-        {{-0.5f, -0.5f, -0.5f}, {0.0f, 0.0f}, SIDES},
-        {{-0.5f,  0.5f, -0.5f}, {1.0f, 0.0f}, SIDES},
-        {{-0.5f,  0.5f,  0.5f}, {1.0f, 1.0f}, SIDES},
-        {{-0.5f,  0.5f,  0.5f}, {1.0f, 1.0f}, SIDES},
-        {{-0.5f, -0.5f,  0.5f}, {0.0f, 1.0f}, SIDES},
-        {{-0.5f, -0.5f, -0.5f}, {0.0f, 0.0f}, SIDES},
-
-        {{ 0.5f, -0.5f, -0.5f}, {0.0f, 0.0f}, SIDES},
-        {{ 0.5f,  0.5f, -0.5f}, {1.0f, 0.0f}, SIDES},
-        {{ 0.5f,  0.5f,  0.5f}, {1.0f, 1.0f}, SIDES},
-        {{ 0.5f,  0.5f,  0.5f}, {1.0f, 1.0f}, SIDES},
-        {{ 0.5f, -0.5f,  0.5f}, {0.0f, 1.0f}, SIDES},
-        {{ 0.5f, -0.5f, -0.5f}, {0.0f, 0.0f}, SIDES}
+        // Front face (z = +0.5)
+        {{-0.5f, -0.5f,  0.5f}, {0.0f, 0.0f}, SIDES, {0.0f, 0.0f, 1.0f}},
+        {{ 0.5f, -0.5f,  0.5f}, {1.0f, 0.0f}, SIDES, {0.0f, 0.0f, 1.0f}},
+        {{ 0.5f,  0.5f,  0.5f}, {1.0f, 1.0f}, SIDES, {0.0f, 0.0f, 1.0f}},
+        {{ 0.5f,  0.5f,  0.5f}, {1.0f, 1.0f}, SIDES, {0.0f, 0.0f, 1.0f}},
+        {{-0.5f,  0.5f,  0.5f}, {0.0f, 1.0f}, SIDES, {0.0f, 0.0f, 1.0f}},
+        {{-0.5f, -0.5f,  0.5f}, {0.0f, 0.0f}, SIDES, {0.0f, 0.0f, 1.0f}},
+        // Back face (z = -0.5)
+        {{ 0.5f, -0.5f, -0.5f}, {0.0f, 0.0f}, SIDES, {0.0f, 0.0f, -1.0f}},
+        {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f}, SIDES, {0.0f, 0.0f, -1.0f}},
+        {{-0.5f,  0.5f, -0.5f}, {1.0f, 1.0f}, SIDES, {0.0f, 0.0f, -1.0f}},
+        {{-0.5f,  0.5f, -0.5f}, {1.0f, 1.0f}, SIDES, {0.0f, 0.0f, -1.0f}},
+        {{ 0.5f,  0.5f, -0.5f}, {0.0f, 1.0f}, SIDES, {0.0f, 0.0f, -1.0f}},
+        {{ 0.5f, -0.5f, -0.5f}, {0.0f, 0.0f}, SIDES, {0.0f, 0.0f, -1.0f}},
+        // Left face (x = -0.5)
+        {{-0.5f, -0.5f, -0.5f}, {0.0f, 0.0f}, SIDES, {-1.0f, 0.0f, 0.0f}},
+        {{-0.5f, -0.5f,  0.5f}, {1.0f, 0.0f}, SIDES, {-1.0f, 0.0f, 0.0f}},
+        {{-0.5f,  0.5f,  0.5f}, {1.0f, 1.0f}, SIDES, {-1.0f, 0.0f, 0.0f}},
+        {{-0.5f,  0.5f,  0.5f}, {1.0f, 1.0f}, SIDES, {-1.0f, 0.0f, 0.0f}},
+        {{-0.5f,  0.5f, -0.5f}, {0.0f, 1.0f}, SIDES, {-1.0f, 0.0f, 0.0f}},
+        {{-0.5f, -0.5f, -0.5f}, {0.0f, 0.0f}, SIDES, {-1.0f, 0.0f, 0.0f}},
+        // Right face (x = +0.5)
+        {{ 0.5f, -0.5f,  0.5f}, {1.0f, 0.0f}, SIDES, {1.0f, 0.0f, 0.0f}},
+        {{ 0.5f, -0.5f, -0.5f}, {0.0f, 0.0f}, SIDES, {1.0f, 0.0f, 0.0f}},
+        {{ 0.5f,  0.5f, -0.5f}, {0.0f, 1.0f}, SIDES, {1.0f, 0.0f, 0.0f}},
+        {{ 0.5f,  0.5f, -0.5f}, {0.0f, 1.0f}, SIDES, {1.0f, 0.0f, 0.0f}},
+        {{ 0.5f,  0.5f,  0.5f}, {1.0f, 1.0f}, SIDES, {1.0f, 0.0f, 0.0f}},
+        {{ 0.5f, -0.5f,  0.5f}, {1.0f, 0.0f}, SIDES, {1.0f, 0.0f, 0.0f}},
+        // Top face (y = +0.5)
+        {{-0.5f,  0.5f,  0.5f}, {0.0f, 1.0f}, UP, {0.0f, 1.0f, 0.0f}},
+        {{ 0.5f,  0.5f,  0.5f}, {1.0f, 1.0f}, UP, {0.0f, 1.0f, 0.0f}},
+        {{ 0.5f,  0.5f, -0.5f}, {1.0f, 0.0f}, UP, {0.0f, 1.0f, 0.0f}},
+        {{ 0.5f,  0.5f, -0.5f}, {1.0f, 0.0f}, UP, {0.0f, 1.0f, 0.0f}},
+        {{-0.5f,  0.5f, -0.5f}, {0.0f, 0.0f}, UP, {0.0f, 1.0f, 0.0f}},
+        {{-0.5f,  0.5f,  0.5f}, {0.0f, 1.0f}, UP, {0.0f, 1.0f, 0.0f}},
+        // Bottom face (y = -0.5)
+        {{-0.5f, -0.5f, -0.5f}, {0.0f, 1.0f}, DOWN, {0.0f, -1.0f, 0.0f}},
+        {{ 0.5f, -0.5f, -0.5f}, {1.0f, 1.0f}, DOWN, {0.0f, -1.0f, 0.0f}},
+        {{ 0.5f, -0.5f,  0.5f}, {1.0f, 0.0f}, DOWN, {0.0f, -1.0f, 0.0f}},
+        {{ 0.5f, -0.5f,  0.5f}, {1.0f, 0.0f}, DOWN, {0.0f, -1.0f, 0.0f}},
+        {{-0.5f, -0.5f,  0.5f}, {0.0f, 0.0f}, DOWN, {0.0f, -1.0f, 0.0f}},
+        {{-0.5f, -0.5f, -0.5f}, {0.0f, 1.0f}, DOWN, {0.0f, -1.0f, 0.0f}},
     };
     
     // VBOs wich doesn't change between cubes
@@ -135,6 +136,10 @@ void Renderer::setupCube() {
     glVertexAttribIPointer(2, 1, GL_INT, stride, (void*)offsetof(Vertex, faceID));
     glEnableVertexAttribArray(2);
 
+    // Normal
+    glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(Vertex, normal));
+    glEnableVertexAttribArray(3);
+
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 
@@ -148,23 +153,23 @@ void Renderer::setupCube() {
     glBufferData(GL_ARRAY_BUFFER, Chunk::CHUNK_SIZE*Chunk::CHUNK_SIZE*Chunk::CHUNK_SIZE * sizeof(InstanceData), nullptr, GL_STATIC_DRAW);
     
     // Instance offset
-    glEnableVertexAttribArray(3);
-    glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(InstanceData), (void*)offsetof(InstanceData, offset));
-    glVertexAttribDivisor(3, 1);
+    glEnableVertexAttribArray(4);
+    glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(InstanceData), (void*)offsetof(InstanceData, offset));
+    glVertexAttribDivisor(4, 1);
 
     // Instance texture
     // Top
-    glEnableVertexAttribArray(4);
-    glVertexAttribIPointer(4, 1, GL_INT, sizeof(InstanceData), (void*)offsetof(InstanceData, topTexID));
-    glVertexAttribDivisor(4, 1);
-    // Side
     glEnableVertexAttribArray(5);
-    glVertexAttribIPointer(5, 1, GL_INT, sizeof(InstanceData), (void*)offsetof(InstanceData, sideTexID));
+    glVertexAttribIPointer(5, 1, GL_INT, sizeof(InstanceData), (void*)offsetof(InstanceData, topTexID));
     glVertexAttribDivisor(5, 1);
-    // Bottom
+    // Side
     glEnableVertexAttribArray(6);
-    glVertexAttribIPointer(6, 1, GL_INT, sizeof(InstanceData), (void*)offsetof(InstanceData, bottomTexID));
+    glVertexAttribIPointer(6, 1, GL_INT, sizeof(InstanceData), (void*)offsetof(InstanceData, sideTexID));
     glVertexAttribDivisor(6, 1);
+    // Bottom
+    glEnableVertexAttribArray(7);
+    glVertexAttribIPointer(7, 1, GL_INT, sizeof(InstanceData), (void*)offsetof(InstanceData, bottomTexID));
+    glVertexAttribDivisor(7, 1);
 }
 
 void Renderer::drawChunk(const Chunk& chunk, Shader& shader, const glm::mat4& view, const glm::mat4& projection) {
@@ -195,6 +200,7 @@ void Renderer::drawChunk(const Chunk& chunk, Shader& shader, const glm::mat4& vi
     shader.setMat4("projection", projection);
     glm::mat4 model = glm::mat4(1.0f);
     shader.setMat4("model", model);
+    shader.setVec3("lightDir", glm::normalize(glm::vec3(-1.0f, -1.0f, -1.0f)));
 
     // 3.5 Definir la texture
     shader.setInt("atlasSize", 4);
