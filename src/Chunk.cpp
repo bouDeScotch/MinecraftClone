@@ -6,5 +6,5 @@ Chunk::Chunk() {
 
 void Chunk::generate() {
     // Génère un simple cube 1x1x1 à l'origine
-    blocks.push_back({glm::vec3(0,0,0)});
+    blocks.push_back({glm::vec3(0.0f, 0.0f, 0.0f), DIRT});
 }

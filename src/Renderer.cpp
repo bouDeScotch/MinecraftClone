@@ -14,6 +14,13 @@ void Renderer::init() {
 }
 
 void Renderer::setupCube() {
+    enum DIRS {
+        UP = 0,
+        SIDES = 1,
+        DOWN = 2
+    };
+
+
     float vertices[] = {
         // positions          
         -0.5f, -0.5f, -0.5f,
@@ -59,18 +66,39 @@ void Renderer::setupCube() {
         -0.5f,  0.5f, -0.5f
     };
 
+    int faceIDs[] = {
+        SIDES, SIDES, SIDES, SIDES, SIDES, SIDES,
+        SIDES, SIDES, SIDES, SIDES, SIDES, SIDES,
+        SIDES, SIDES, SIDES, SIDES, SIDES, SIDES,
+        SIDES, SIDES, SIDES, SIDES, SIDES, SIDES,
+        DOWN,  DOWN,  DOWN,  DOWN,  DOWN,  DOWN,
+        UP,    UP,    UP,    UP,    UP,    UP
+    };
+
+    
+    // VBO pour positions
+    GLuint VBO_pos, VBO_faceID;
     glGenVertexArrays(1, &cubeVAO);
-    glGenBuffers(1, &cubeVBO);
+    glGenBuffers(1, &VBO_pos);
+    glGenBuffers(1, &VBO_faceID);
 
     glBindVertexArray(cubeVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
+    // positions
+    glBindBuffer(GL_ARRAY_BUFFER, VBO_pos);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
+    // face IDs (int)
+    glBindBuffer(GL_ARRAY_BUFFER, VBO_faceID);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(faceIDs), faceIDs, GL_STATIC_DRAW);
+    glVertexAttribIPointer(1, 1, GL_INT, sizeof(int), (void*)0); // I pour int
+    glEnableVertexAttribArray(1);
+
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
+
 }
 
 void Renderer::drawChunk(const Chunk& chunk, Shader& shader, const glm::mat4& view, const glm::mat4& projection) {
