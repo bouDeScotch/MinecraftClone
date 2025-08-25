@@ -2,6 +2,7 @@
 #include "../include/PerlinNoise.hpp"
 #include <iostream>
 #include <map>
+#include <time.h>
 
 // Block texture is
 // {front, back, left, right, top, bottom}
@@ -14,10 +15,11 @@ static std::map<BlockType, BlockTexture> blockTextures = {
     {SAND, {4, 4, 4, 4, 4, 4}}
 };
 
+static const siv::PerlinNoise::seed_type seed = time(0);
+
 const glm::ivec3 Chunk::CHUNK_SIZE = glm::ivec3(16, 128, 16);
 
 void Chunk::generate() {
-    siv::PerlinNoise::seed_type seed = 123456;
     siv::PerlinNoise perlin(seed);
 
     for (float x = 0; x < Chunk::CHUNK_SIZE.x; x++) {
@@ -26,15 +28,24 @@ void Chunk::generate() {
             int worldZ = z + chunkPos.z * Chunk::CHUNK_SIZE.z;
             // Simple height map using sine waves
             float height = perlin.octave2D_01(worldX*0.05f, worldZ*0.05f, 4) * 50.0f;
+            float humidity = perlin.octave2D_01(worldX*0.01f + 100, worldZ*0.01f + 100, 4);
             for (float y = 0; y < height && y < Chunk::CHUNK_SIZE.y; y++) {
                 int worldY = y + chunkPos.y * Chunk::CHUNK_SIZE.y;
                 // Place random BlockType for demonstration
                 if (worldY < height - 3) {
                     blocks.push_back({glm::vec3(x, y, z), STONE});
                 } else if (worldY < height - 1) {
-                    blocks.push_back({glm::vec3(x, y, z), DIRT});
+                    if (humidity < 0.3f) {
+                        blocks.push_back({glm::vec3(x, y, z), SAND});
+                    } else {
+                        blocks.push_back({glm::vec3(x, y, z), DIRT});
+                    }
                 } else {
-                    blocks.push_back({glm::vec3(x, y, z), GRASS});
+                    if (humidity < 0.3f) {
+                        blocks.push_back({glm::vec3(x, y, z), SAND});
+                    } else {
+                        blocks.push_back({glm::vec3(x, y, z), GRASS});
+                    }
                 }
             }
         }
@@ -118,8 +129,6 @@ void Chunk::generateMesh() {
     std::cout << "Generated " << vertices.size() << " vertices and " 
               << indices.size() / 3 << " triangles for chunk at "
               << chunkPos.x << ", " << chunkPos.y << ", " << chunkPos.z << ".\n";
-
-    uploadMeshToGPU();
 }
 
 void Chunk::addFaces(const std::vector<glm::ivec3>& positions, 

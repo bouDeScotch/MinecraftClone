@@ -63,11 +63,11 @@ public:
 
     void generateMesh();
     Block getBlockAt(const glm::ivec3& localPos) const;
+    void uploadMeshToGPU();
 
 private:
     std::vector<Vertex>   vertices;
     std::vector<uint32_t> indices;
-    void uploadMeshToGPU();
     //void addFace(const glm::ivec3& bpos, Face f, int tileID);
     void addFaces(const std::vector<glm::ivec3>& positions, 
                   const std::vector<Face>& faces, 

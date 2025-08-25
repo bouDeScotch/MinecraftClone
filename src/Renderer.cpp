@@ -164,7 +164,8 @@ void Renderer::setupCube() {
 }
 
 void Renderer::drawChunkMesh(const Chunk& chunk, Shader& shader,
-                             const glm::mat4& view, const glm::mat4& projection) {
+                             const glm::mat4& view, const glm::mat4& projection,
+                             const glm::vec3 &lightDir) {
     if (chunk.gl.indexCount == 0) return;
 
     shader.use();
@@ -172,7 +173,7 @@ void Renderer::drawChunkMesh(const Chunk& chunk, Shader& shader,
     shader.setMat4("projection", projection);
     shader.setMat4("model", glm::mat4(1.0f));
     shader.setInt("atlasSize", /* ex */ 4);
-    shader.setVec3("lightDir", glm::vec3(0.5f, -1.0f, 0.5f));
+    shader.setVec3("lightDir", lightDir);
 
     glBindVertexArray(chunk.gl.vao);
     glDrawElements(GL_TRIANGLES,

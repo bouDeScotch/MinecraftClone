@@ -18,7 +18,8 @@ public:
 
     void init();
     void drawChunkMesh(const Chunk& chunk, Shader& shader,
-                       const glm::mat4& view, const glm::mat4& projection);
+                       const glm::mat4& view, const glm::mat4& projection,
+                       const glm::vec3 &lightDir = glm::vec3(0.5f));
 private:
     unsigned int cubeVAO, cubeVBO;
 
