@@ -3,16 +3,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #define STB_IMAGE_IMPLEMENTATION
 #include "../include/stb_image.h"
-#include <map>
 
-static std::map<BlockType, BlockTexture> blockTextures = {
-    {DIRT, {0, 0, 0}},
-    {GRASS, {2, 1, 0}},
-    {STONE, {3, 3, 3}},
-    {WOOD, {7, 6, 7}},
-    {LEAF, {5, 5, 5}},
-    {SAND, {4, 4, 4}}
-};
 
 Renderer::Renderer() : cubeVAO(0), cubeVBO(0) {}
 
@@ -125,7 +116,7 @@ void Renderer::setupCube() {
 
     // Position
     // glVertexAttribPointer(GLunint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void * pointer);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(Vertex, position));
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(Vertex, pos));
     glEnableVertexAttribArray(0);
 
     // UV
@@ -150,7 +141,7 @@ void Renderer::setupCube() {
     // Instance VBOs
     glGenBuffers(1, &instanceVBO);
     glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
-    glBufferData(GL_ARRAY_BUFFER, Chunk::CHUNK_SIZE*Chunk::CHUNK_SIZE*Chunk::CHUNK_SIZE * sizeof(InstanceData), nullptr, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, Chunk::CHUNK_SIZE.x*Chunk::CHUNK_SIZE.y*Chunk::CHUNK_SIZE.z * sizeof(InstanceData), nullptr, GL_STATIC_DRAW);
     
     // Instance offset
     glEnableVertexAttribArray(4);
@@ -172,41 +163,21 @@ void Renderer::setupCube() {
     glVertexAttribDivisor(7, 1);
 }
 
-void Renderer::drawChunk(const Chunk& chunk, Shader& shader, const glm::mat4& view, const glm::mat4& projection) {
+void Renderer::drawChunkMesh(const Chunk& chunk, Shader& shader,
+                             const glm::mat4& view, const glm::mat4& projection) {
+    if (chunk.gl.indexCount == 0) return;
+
     shader.use();
-
-    // 1. Préparer les données instanciées
-    std::vector<InstanceData> instances(chunk.blocks.size());
-    for (size_t i = 0; i < chunk.blocks.size(); ++i) {
-        instances[i].offset = chunk.blocks[i].position;
-        BlockType type = chunk.blocks[i].type;
-        if (blockTextures.find(type) != blockTextures.end()) {
-            instances[i].topTexID = blockTextures[type].top;
-            instances[i].sideTexID = blockTextures[type].side;
-            instances[i].bottomTexID = blockTextures[type].bottom;
-        } else {
-            instances[i].topTexID = 0;
-            instances[i].sideTexID = 0;
-            instances[i].bottomTexID = 0;
-        }
-    }
-
-    // 2. Mettre à jour le VBO instancié
-    glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, instances.size() * sizeof(InstanceData), instances.data());
-
-    // 3. Mettre en place les matrices
     shader.setMat4("view", view);
     shader.setMat4("projection", projection);
-    glm::mat4 model = glm::mat4(1.0f);
-    shader.setMat4("model", model);
-    shader.setVec3("lightDir", glm::normalize(glm::vec3(-1.0f, -1.0f, -1.0f)));
+    shader.setMat4("model", glm::mat4(1.0f));
+    shader.setInt("atlasSize", /* ex */ 4);
+    shader.setVec3("lightDir", glm::vec3(0.5f, -1.0f, 0.5f));
 
-    // 3.5 Definir la texture
-    shader.setInt("atlasSize", 4);
-
-    // 4. Draw call
-    glBindVertexArray(cubeVAO);
-    glDrawArraysInstanced(GL_TRIANGLES, 0, 36, chunk.blocks.size());
+    glBindVertexArray(chunk.gl.vao);
+    glDrawElements(GL_TRIANGLES,
+                   static_cast<GLsizei>(chunk.gl.indexCount),
+                   GL_UNSIGNED_INT,
+                   0);
     glBindVertexArray(0);
 }

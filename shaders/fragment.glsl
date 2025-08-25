@@ -9,6 +9,10 @@ uniform vec3 lightDir;
 
 out vec4 FragColor;
 
+float rand(vec2 co) {
+    return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
+}
+
 vec3 computeLighting(vec3 normal, vec3 lightDir) {
     normal = normalize(normal);
     lightDir = normalize(lightDir);
@@ -31,6 +35,8 @@ vec3 computeLighting(vec3 normal, vec3 lightDir) {
 
 void main() {
     vec3 lightFactor = computeLighting(fragNormal, lightDir);
+    float noise = rand(fragUV * 100.0) * 0.1; // bruit subtil
+    lightFactor += noise;
     vec3 color = texture(textureAtlas, fragUV).rgb * lightFactor;
     FragColor = vec4(color, 1.0);
 }

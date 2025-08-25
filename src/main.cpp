@@ -66,6 +66,12 @@ int main() {
     Renderer renderer;
     renderer.init();
     World world;
+    world.generateChunks(1, glm::ivec3(0,0,0));
+    std::cout << "Starting mesh generation for " << world.chunks.size() << " chunks...\n";
+    for (auto& chunk : world.chunks) {
+        chunk.generateMesh();
+    }
+    std::cout << "Mesh generation completed.\n";
     Shader shader("../shaders/vertex.glsl", "../shaders/fragment.glsl");
 
     float deltaTime = 0.0f;
@@ -93,9 +99,11 @@ int main() {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glm::mat4 view = glm::lookAt(player.position, player.position + camera.front, camera.up);
-        glm::mat4 projection = glm::perspective(glm::radians(45.0f), 800.0f/600.0f, 0.1f, 100.0f);
+        glm::mat4 projection = glm::perspective(glm::radians(45.0f), 800.0f/600.0f, 0.1f, 10000.0f);
 
-        renderer.drawChunk(world.chunk, shader, view, projection);
+        for (const auto& chunk : world.chunks) {
+            renderer.drawChunkMesh(chunk, shader, view, projection);
+        }
 
         glfwSwapBuffers(window);
         glfwPollEvents();

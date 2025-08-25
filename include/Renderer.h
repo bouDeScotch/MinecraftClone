@@ -4,13 +4,6 @@
 #include <GLFW/glfw3.h>
 #include "Shader.h"
 
-struct Vertex {
-    glm::vec3 position;
-    glm::vec2 uv;
-    int faceID;
-    glm::vec3 normal;
-};
-
 struct InstanceData {
     glm::vec3 offset;
     int topTexID;
@@ -24,7 +17,8 @@ public:
     ~Renderer();
 
     void init();
-    void drawChunk(const Chunk& chunk, Shader& shader, const glm::mat4& view, const glm::mat4& projection);
+    void drawChunkMesh(const Chunk& chunk, Shader& shader,
+                       const glm::mat4& view, const glm::mat4& projection);
 private:
     unsigned int cubeVAO, cubeVBO;
 
@@ -32,5 +26,6 @@ private:
 
     void setupCube();
     void loadTextures(std::string filepath);
+    glm::vec3 getLightDir(float time);
 };
 
