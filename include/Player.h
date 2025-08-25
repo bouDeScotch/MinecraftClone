@@ -1,5 +1,7 @@
 #pragma once
 #include <glm/glm.hpp>
+#include "Chunk.h"
+#include "World.h"
 
 class Player {
 public:
@@ -9,4 +11,6 @@ public:
     Player();
 
     void move(const glm::vec3& delta);
+
+    void placeBlock(class World& world, BlockType type);
 };

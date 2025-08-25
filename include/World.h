@@ -2,6 +2,7 @@
 #include "Chunk.h"
 #include <vector>
 #include <iostream>
+#include <glm/gtx/string_cast.hpp>
 
 class World {
 public:
@@ -26,5 +27,24 @@ public:
             }
         }
         return nullptr;
+    }
+
+    void placeBlock(Block block) {
+        glm::ivec3 chunkPos = {
+            static_cast<int>(std::floor(block.position.x / Chunk::CHUNK_SIZE.x)),
+            static_cast<int>(std::floor(block.position.y / Chunk::CHUNK_SIZE.y)),
+            static_cast<int>(std::floor(block.position.z / Chunk::CHUNK_SIZE.z))
+        };
+        Chunk* chunk = getChunkAt(chunkPos);
+        if (chunk) {
+            glm::ivec3 localPos = static_cast<glm::ivec3>(block.position) - chunkPos * Chunk::CHUNK_SIZE;
+            if (localPos.x >= 0 && localPos.x < Chunk::CHUNK_SIZE.x &&
+                localPos.y >= 0 && localPos.y < Chunk::CHUNK_SIZE.y &&
+                localPos.z >= 0 && localPos.z < Chunk::CHUNK_SIZE.z) {
+                chunk->setBlockAt(localPos, block.type);
+                chunk->generateMesh();
+                chunk->uploadMeshToGPU();
+            }
+        }
     }
 };

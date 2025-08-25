@@ -20,7 +20,7 @@ bool isFullscreen = false;
 Player player;
 Camera camera;
 
-void processInput(GLFWwindow *window, float deltaTime) {
+void processInput(GLFWwindow *window, float deltaTime, World& world) {
     float speed = 10.0f * deltaTime;
     if(glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
         player.move(camera.front * speed);
@@ -34,6 +34,16 @@ void processInput(GLFWwindow *window, float deltaTime) {
         player.move(camera.up * speed);
     if(glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
         player.move(-camera.up * speed);
+    // Detect right click and place a block
+    static bool wasPressed = false;
+    if(glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
+        if (!wasPressed) {
+            player.placeBlock(world, BlockType::LEAF);
+            wasPressed = true;
+        }
+    } else {
+        wasPressed = false;
+    }
 
     static bool escWasPressed = false;
     int escState = glfwGetKey(window, GLFW_KEY_ESCAPE);
@@ -165,7 +175,7 @@ int main() {
             fpsTimer = 0.0f;
         }
 
-        processInput(window, deltaTime);
+        processInput(window, deltaTime, world);
 
         glClearColor(0.1f, 0.1f, 0.15f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
