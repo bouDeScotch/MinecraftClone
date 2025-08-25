@@ -62,8 +62,8 @@ public:
     void generate();
 
     void generateMesh();
-    Block& getBlockAt(const glm::ivec3& localPos);
-    const void setBlockAt(const glm::ivec3& localPos, BlockType type);
+    inline Block& getBlockAt(const glm::ivec3& localPos);
+    inline const void setBlockAt(const glm::ivec3& localPos, BlockType type);
     void uploadMeshToGPU();
 
 private:

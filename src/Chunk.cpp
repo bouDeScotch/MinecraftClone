@@ -59,7 +59,7 @@ void Chunk::generate() {
     }
 }
 
-const void Chunk::setBlockAt(const glm::ivec3& localPos, BlockType type) {
+inline const void Chunk::setBlockAt(const glm::ivec3& localPos, BlockType type) {
     int index = localPos.x 
               + localPos.y * CHUNK_SIZE.x
               + localPos.z * CHUNK_SIZE.x * CHUNK_SIZE.y;
@@ -68,7 +68,7 @@ const void Chunk::setBlockAt(const glm::ivec3& localPos, BlockType type) {
 }
 
 
-Block& Chunk::getBlockAt(const glm::ivec3& localPos) {
+inline Block& Chunk::getBlockAt(const glm::ivec3& localPos) {
     int index = localPos.x 
               + localPos.y * CHUNK_SIZE.x
               + localPos.z * CHUNK_SIZE.x * CHUNK_SIZE.y;
@@ -87,48 +87,54 @@ void Chunk::generateMesh() {
     meshFaces.clear();
     meshTypes.clear();
 
-    for (const auto& block : blocks) {
-        glm::ivec3 localPos = glm::ivec3(block.position);
-        glm::ivec3 worldPos = localPos + chunkPos * CHUNK_SIZE;
-        BlockType type = block.type;
-        if (type == AIR) continue;
+    //for (const auto& block : blocks) {
+    for (int x = 0; x < CHUNK_SIZE.x; ++x) {
+        for (int y = 0; y < CHUNK_SIZE.y; ++y) {
+            for (int z = 0; z < CHUNK_SIZE.z; ++z) {
+                Block& block = getBlockAt(glm::ivec3(x,y,z));
+                BlockType type = block.type;
+                glm::ivec3 localPos = glm::ivec3(x,y,z);
+                glm::ivec3 worldPos = localPos + chunkPos * CHUNK_SIZE;
+                if (type == AIR) continue;
 
-        // Check each face
-        // FRONT (+Z)
-        if (getBlockAt(localPos + glm::ivec3(0, 0, 1)).type == AIR) {
-            meshPositions.push_back(worldPos);
-            meshFaces.push_back(FRONT);
-            meshTypes.push_back(type);
-        }
-        // BACK (-Z)
-        if (getBlockAt(localPos + glm::ivec3(0, 0, -1)).type == AIR) {
-            meshPositions.push_back(worldPos);
-            meshFaces.push_back(BACK);
-            meshTypes.push_back(type);
-        }
-        // LEFT (-X)
-        if (getBlockAt(localPos + glm::ivec3(-1, 0, 0)).type == AIR) {
-            meshPositions.push_back(worldPos);
-            meshFaces.push_back(LEFT);
-            meshTypes.push_back(type);
-        }
-        // RIGHT (+X)
-        if (getBlockAt(localPos + glm::ivec3(1, 0, 0)).type == AIR) {
-            meshPositions.push_back(worldPos);
-            meshFaces.push_back(RIGHT);
-            meshTypes.push_back(type);
-        }
-        // TOP (+Y)
-        if (getBlockAt(localPos + glm::ivec3(0, 1, 0)).type == AIR) {
-            meshPositions.push_back(worldPos);
-            meshFaces.push_back(TOP);
-            meshTypes.push_back(type);
-        }
-        // BOTTOM (-Y)
-        if (getBlockAt(localPos + glm::ivec3(0, -1, 0)).type == AIR) {
-            meshPositions.push_back(worldPos);
-            meshFaces.push_back(BOTTOM);
-            meshTypes.push_back(type);
+                // Check each face
+                // FRONT (+Z)
+                if (getBlockAt(localPos + glm::ivec3(0, 0, 1)).type == AIR) {
+                    meshPositions.push_back(worldPos);
+                    meshFaces.push_back(FRONT);
+                    meshTypes.push_back(type);
+                }
+                // BACK (-Z)
+                if (getBlockAt(localPos + glm::ivec3(0, 0, -1)).type == AIR) {
+                    meshPositions.push_back(worldPos);
+                    meshFaces.push_back(BACK);
+                    meshTypes.push_back(type);
+                }
+                // LEFT (-X)
+                if (getBlockAt(localPos + glm::ivec3(-1, 0, 0)).type == AIR) {
+                    meshPositions.push_back(worldPos);
+                    meshFaces.push_back(LEFT);
+                    meshTypes.push_back(type);
+                }
+                // RIGHT (+X)
+                if (getBlockAt(localPos + glm::ivec3(1, 0, 0)).type == AIR) {
+                    meshPositions.push_back(worldPos);
+                    meshFaces.push_back(RIGHT);
+                    meshTypes.push_back(type);
+                }
+                // TOP (+Y)
+                if (getBlockAt(localPos + glm::ivec3(0, 1, 0)).type == AIR) {
+                    meshPositions.push_back(worldPos);
+                    meshFaces.push_back(TOP);
+                    meshTypes.push_back(type);
+                }
+                // BOTTOM (-Y)
+                if (getBlockAt(localPos + glm::ivec3(0, -1, 0)).type == AIR) {
+                    meshPositions.push_back(worldPos);
+                    meshFaces.push_back(BOTTOM);
+                    meshTypes.push_back(type);
+                }
+            }
         }
     }
 

@@ -110,7 +110,7 @@ int main() {
     Renderer renderer;
     renderer.init();
     World world;
-    world.generateChunks(3, glm::ivec3(0,0,0));
+    world.generateChunks(30, glm::ivec3(0,0,0));
     std::cout << "Starting mesh generation for " << world.chunks.size() << " chunks...\n";
 
     std::vector<std::future<void>> futures;
