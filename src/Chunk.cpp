@@ -20,6 +20,13 @@ static const siv::PerlinNoise::seed_type seed = time(0);
 const glm::ivec3 Chunk::CHUNK_SIZE = glm::ivec3(16, 128, 16);
 
 void Chunk::generate() {
+    
+    meshPositions.reserve(Chunk::CHUNK_SIZE.x * Chunk::CHUNK_SIZE.y * Chunk::CHUNK_SIZE.z * 6);
+    meshFaces.reserve(Chunk::CHUNK_SIZE.x * Chunk::CHUNK_SIZE.y * Chunk::CHUNK_SIZE.z * 6);
+    meshTypes.reserve(Chunk::CHUNK_SIZE.x * Chunk::CHUNK_SIZE.y * Chunk::CHUNK_SIZE.z * 6);
+    blocks.resize(Chunk::CHUNK_SIZE.x * Chunk::CHUNK_SIZE.y * Chunk::CHUNK_SIZE.z, {{0,0,0}, AIR});
+
+
     siv::PerlinNoise perlin(seed);
 
     for (float x = 0; x < Chunk::CHUNK_SIZE.x; x++) {
@@ -33,18 +40,18 @@ void Chunk::generate() {
                 int worldY = y + chunkPos.y * Chunk::CHUNK_SIZE.y;
                 // Place random BlockType for demonstration
                 if (worldY < height - 3) {
-                    blocks.push_back({glm::vec3(x, y, z), STONE});
+                    setBlockAt(glm::ivec3(x, y, z), STONE);
                 } else if (worldY < height - 1) {
                     if (humidity < 0.3f) {
-                        blocks.push_back({glm::vec3(x, y, z), SAND});
+                        setBlockAt(glm::ivec3(x, y, z), SAND);
                     } else {
-                        blocks.push_back({glm::vec3(x, y, z), DIRT});
+                        setBlockAt(glm::ivec3(x, y, z), DIRT);
                     }
                 } else {
                     if (humidity < 0.3f) {
-                        blocks.push_back({glm::vec3(x, y, z), SAND});
+                        setBlockAt(glm::ivec3(x, y, z), SAND);
                     } else {
-                        blocks.push_back({glm::vec3(x, y, z), GRASS});
+                        setBlockAt(glm::ivec3(x, y, z), GRASS);
                     }
                 }
             }
@@ -52,33 +59,34 @@ void Chunk::generate() {
     }
 }
 
-Block Chunk::getBlockAt(const glm::ivec3& localPos) const {
-    for (const auto& block : blocks) {
-        if (glm::ivec3(block.position) == localPos) {
-            return block;
-        }
-    }
-    return {localPos, AIR}; // Return AIR if no block found
+const void Chunk::setBlockAt(const glm::ivec3& localPos, BlockType type) {
+    int index = localPos.x 
+              + localPos.y * CHUNK_SIZE.x
+              + localPos.z * CHUNK_SIZE.x * CHUNK_SIZE.y;
+    blocks[index].type = type;
+    blocks[index].position = glm::vec3(localPos);
 }
 
+
+Block& Chunk::getBlockAt(const glm::ivec3& localPos) {
+    int index = localPos.x 
+              + localPos.y * CHUNK_SIZE.x
+              + localPos.z * CHUNK_SIZE.x * CHUNK_SIZE.y;
+    return blocks[index];
+}
+
+
 void Chunk::generateMesh() {
-    std::cout << "Generating mesh for chunk at " 
-              << chunkPos.x << ", " << chunkPos.y << ", " << chunkPos.z 
-              << " with " << blocks.size() << " blocks.\n";
     vertices.clear();
     indices.clear();
 
     vertices.reserve(blocks.size() * 24); // max 24 vertices per block
     indices.reserve(blocks.size() * 36);  // max 36 indices per block
 
-    std::vector<glm::ivec3> positions;
-    positions.reserve(blocks.size() * 6); // max 6 faces per block
-    std::vector<Face> faces;
-    faces.reserve(blocks.size() * 6);
-    std::vector<BlockType> types;
-    types.reserve(blocks.size() * 6);
+    meshPositions.clear();
+    meshFaces.clear();
+    meshTypes.clear();
 
-    std::cout << "Adding faces for blocks..." << std::endl;
     for (const auto& block : blocks) {
         glm::ivec3 localPos = glm::ivec3(block.position);
         glm::ivec3 worldPos = localPos + chunkPos * CHUNK_SIZE;
@@ -88,52 +96,48 @@ void Chunk::generateMesh() {
         // Check each face
         // FRONT (+Z)
         if (getBlockAt(localPos + glm::ivec3(0, 0, 1)).type == AIR) {
-            positions.push_back(worldPos);
-            faces.push_back(FRONT);
-            types.push_back(type);
+            meshPositions.push_back(worldPos);
+            meshFaces.push_back(FRONT);
+            meshTypes.push_back(type);
         }
         // BACK (-Z)
         if (getBlockAt(localPos + glm::ivec3(0, 0, -1)).type == AIR) {
-            positions.push_back(worldPos);
-            faces.push_back(BACK);
-            types.push_back(type);
+            meshPositions.push_back(worldPos);
+            meshFaces.push_back(BACK);
+            meshTypes.push_back(type);
         }
         // LEFT (-X)
         if (getBlockAt(localPos + glm::ivec3(-1, 0, 0)).type == AIR) {
-            positions.push_back(worldPos);
-            faces.push_back(LEFT);
-            types.push_back(type);
+            meshPositions.push_back(worldPos);
+            meshFaces.push_back(LEFT);
+            meshTypes.push_back(type);
         }
         // RIGHT (+X)
         if (getBlockAt(localPos + glm::ivec3(1, 0, 0)).type == AIR) {
-            positions.push_back(worldPos);
-            faces.push_back(RIGHT);
-            types.push_back(type);
+            meshPositions.push_back(worldPos);
+            meshFaces.push_back(RIGHT);
+            meshTypes.push_back(type);
         }
         // TOP (+Y)
         if (getBlockAt(localPos + glm::ivec3(0, 1, 0)).type == AIR) {
-            positions.push_back(worldPos);
-            faces.push_back(TOP);
-            types.push_back(type);
+            meshPositions.push_back(worldPos);
+            meshFaces.push_back(TOP);
+            meshTypes.push_back(type);
         }
         // BOTTOM (-Y)
         if (getBlockAt(localPos + glm::ivec3(0, -1, 0)).type == AIR) {
-            positions.push_back(worldPos);
-            faces.push_back(BOTTOM);
-            types.push_back(type);
+            meshPositions.push_back(worldPos);
+            meshFaces.push_back(BOTTOM);
+            meshTypes.push_back(type);
         }
     }
-    std::cout << "Total faces to add: " << positions.size() << std::endl;
 
-    addFaces(positions, faces, types);
-    std::cout << "Generated " << vertices.size() << " vertices and " 
-              << indices.size() / 3 << " triangles for chunk at "
-              << chunkPos.x << ", " << chunkPos.y << ", " << chunkPos.z << ".\n";
+    addFaces(meshPositions, meshFaces, meshTypes);
 }
 
-void Chunk::addFaces(const std::vector<glm::ivec3>& positions, 
-                     const std::vector<Face>& faces, 
-                     const std::vector<BlockType>& types) {
+void Chunk::addFaces(const std::vector<glm::ivec3>& meshPositions, 
+                     const std::vector<Face>& meshFaces, 
+                     const std::vector<BlockType>& meshTypes) {
     static const glm::vec3 nrm[6] = {
         { 0, 0,  1}, // FRONT  (+Z)
         { 0, 0, -1}, // BACK   (-Z)
@@ -174,10 +178,10 @@ void Chunk::addFaces(const std::vector<glm::ivec3>& positions,
         {0,0}, {1,0}, {1,1}, {0,1}
     };
 
-    for (size_t idx = 0; idx < positions.size(); ++idx) {
-        const glm::vec3 base(positions[idx]); // coin min du bloc (x,y,z)
-        Face f = faces[idx];
-        BlockType type = types[idx];
+    for (size_t idx = 0; idx < meshPositions.size(); ++idx) {
+        const glm::vec3 base(meshPositions[idx]); // coin min du bloc (x,y,z)
+        Face f = meshFaces[idx];
+        BlockType type = meshTypes[idx];
         int tileID;
         switch (f) {
             case FRONT:  tileID = blockTextures[type].front;  break;

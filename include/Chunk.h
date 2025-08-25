@@ -62,12 +62,18 @@ public:
     void generate();
 
     void generateMesh();
-    Block getBlockAt(const glm::ivec3& localPos) const;
+    Block& getBlockAt(const glm::ivec3& localPos);
+    const void setBlockAt(const glm::ivec3& localPos, BlockType type);
     void uploadMeshToGPU();
 
 private:
     std::vector<Vertex>   vertices;
     std::vector<uint32_t> indices;
+
+    std::vector<glm::ivec3> meshPositions;
+    std::vector<Face>      meshFaces;
+    std::vector<BlockType> meshTypes;
+
     //void addFace(const glm::ivec3& bpos, Face f, int tileID);
     void addFaces(const std::vector<glm::ivec3>& positions, 
                   const std::vector<Face>& faces, 

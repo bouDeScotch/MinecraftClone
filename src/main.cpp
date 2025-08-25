@@ -11,7 +11,6 @@
 #include "../include/Camera.h"
 #include "../include/Shader.h"
 
-
 unsigned int windowedWidth = 1280, windowedHeight = 720;
 unsigned int SCR_WIDTH = windowedWidth;
 unsigned int SCR_HEIGHT = windowedHeight;
@@ -113,24 +112,8 @@ int main() {
     World world;
     world.generateChunks(3, glm::ivec3(0,0,0));
     std::cout << "Starting mesh generation for " << world.chunks.size() << " chunks...\n";
-    /*
-    for (auto& chunk : world.chunks) {
-        chunk.generateMesh();
-    }
-    */
 
     std::vector<std::future<void>> futures;
-    /*
-    for (auto& chunk : world.chunks) {
-        futures.push_back(std::async(std::launch::async, [&chunk]() {
-            chunk.generateMesh();
-        }));
-    }
-
-    for (auto& fut : futures) {
-        fut.get();
-    }
-    */
 
     size_t n = world.chunks.size();
     futures.reserve(n);
@@ -138,6 +121,7 @@ int main() {
     // simple job system : spawn worker threads that pop indices from an atomic counter
     std::atomic<size_t> idx{0};
     std::vector<std::thread> workers;
+    float startTime = glfwGetTime();
     for (unsigned t=0; t<threads; ++t) {
         workers.emplace_back([&](){
             while (true) {
@@ -153,13 +137,11 @@ int main() {
         chunk.uploadMeshToGPU();
     }
     std::cout << "Mesh generation completed.\n";
+    float endTime = glfwGetTime();
+    std::cout << "Time taken: " << (endTime - startTime) << " seconds.\n";
     Shader shader("../shaders/vertex.glsl", "../shaders/fragment.glsl");
 
-    /*
-    Player Position: (118.059, 137.031, -89.8551)
-    Camera Direction: (498.202, -41.5001)
-    */
-    player.position = glm::vec3(118.0f, 137.0f, 114.0f);
+    player.position = glm::vec3(0.0f, 137.0f, 0.0f);
     camera.position = player.position;
     camera.yaw = 226.0f;
     camera.pitch = -34.0f;
@@ -181,18 +163,9 @@ int main() {
             std::cout << "FPS: " << frames << std::endl;
             frames = 0;
             fpsTimer = 0.0f;
-
-            // Also print player position and camera direction
-            std::cout << "Player Position: ("
-                        << player.position.x << ", "
-                        << player.position.y << ", "
-                        << player.position.z << ")\n";
-            std::cout << "Camera Direction: ("
-                        << camera.yaw << ", "
-                    << camera.pitch << ")" << std::endl;
         }
 
-        processInput(window, deltaTime); // tu pourras utiliser deltaTime pour le mouvement
+        processInput(window, deltaTime);
 
         glClearColor(0.1f, 0.1f, 0.15f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
