@@ -4,9 +4,15 @@
 #include <iostream>
 #include <glm/gtx/string_cast.hpp>
 #include <unordered_map>
+#include "PerlinNoise.hpp"
 
 class World {
 public:
+
+    // Move seed here
+    static const siv::PerlinNoise::seed_type seed = 765;
+    siv::PerlinNoise perlin = siv::PerlinNoise(seed);
+
     struct IVec3Hash {
         size_t operator()(const glm::ivec3& v) const {
             return ((std::hash<int>()(v.x) ^ (std::hash<int>()(v.y) << 1)) >> 1) ^ (std::hash<int>()(v.z) << 1);
@@ -14,12 +20,18 @@ public:
     };
 
     std::unordered_map<glm::ivec3, Chunk, IVec3Hash> chunkMap;    
-    World() {}
+    World() {
+        // Create directory for chunks if it doesn't exist
+        std::string dir = "../chunks/" + std::to_string(seed);
+        if (system(("mkdir -p " + dir).c_str()) != 0) {
+            std::cerr << "Failed to create directory: " << dir << std::endl;
+        }
+    }
 
     void createChunkAt(const glm::ivec3& pos) {
         if (chunkMap.find(pos) == chunkMap.end()) {
             Chunk chunk(pos);
-            chunk.generate();
+            chunk.generate(perlin);
             chunkMap.emplace(pos, chunk);
         }
     }
@@ -70,5 +82,4 @@ public:
         }
         return chunksToDraw;
     }
-
 };

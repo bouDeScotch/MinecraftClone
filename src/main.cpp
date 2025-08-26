@@ -3,7 +3,6 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
-#include <future>
 #include <queue>
 #include <mutex>
 #include <thread>
@@ -201,14 +200,7 @@ int main() {
             static_cast<int>(std::floor(player.position.z / Chunk::CHUNK_SIZE.z))
         };
 
-        auto chunksToDraw = world.getAllChunksToDraw(playerChunkPos, 20);
-
-        // Créer les chunks manquants (toujours main thread)
-        for(const auto& pos : chunksToDraw) {
-            if(!world.getChunkAt(pos)) {
-                world.createChunkAt(pos);
-            }
-        }
+        auto chunksToDraw = world.getAllChunksToDraw(playerChunkPos, 20); 
 
         // Upload sur GPU les chunks prêts
         {

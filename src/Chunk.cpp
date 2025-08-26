@@ -16,18 +16,14 @@ static std::map<BlockType, BlockTexture> blockTextures = {
     {SNOW, {11, 11, 11, 11, 11, 11}},
 };
 
-static const siv::PerlinNoise::seed_type seed = time(0);
-
 const glm::ivec3 Chunk::CHUNK_SIZE = glm::ivec3(16, 128, 16);
 
 
-void Chunk::generate() {
+void Chunk::generate(siv::PerlinNoise& perlin) {
     meshPositions.reserve(Chunk::CHUNK_SIZE.x * Chunk::CHUNK_SIZE.y * Chunk::CHUNK_SIZE.z * 6);
     meshFaces.reserve(Chunk::CHUNK_SIZE.x * Chunk::CHUNK_SIZE.y * Chunk::CHUNK_SIZE.z * 6);
     meshTypes.reserve(Chunk::CHUNK_SIZE.x * Chunk::CHUNK_SIZE.y * Chunk::CHUNK_SIZE.z * 6);
     blocks.resize(Chunk::CHUNK_SIZE.x * Chunk::CHUNK_SIZE.y * Chunk::CHUNK_SIZE.z, {{0,0,0}, AIR});
-
-    siv::PerlinNoise perlin(seed);
 
     for (int x = 0; x < Chunk::CHUNK_SIZE.x; x++) {
         int worldX = x + chunkPos.x * Chunk::CHUNK_SIZE.x;

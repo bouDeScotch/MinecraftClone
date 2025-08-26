@@ -2,6 +2,7 @@
 #include <glm/glm.hpp>
 #include <vector>
 #include <glad/glad.h>
+#include "PerlinNoise.hpp"
 
 enum BlockType {
     AIR,
@@ -59,9 +60,9 @@ public:
 
     ChunkMeshGL gl;
 
-   Chunk(const glm::ivec3& pos) : chunkPos(pos) { generate(); }
+   Chunk(const glm::ivec3& pos) : chunkPos(pos) {}
 
-    void generate();
+    void generate(siv::PerlinNoise& perlin);
 
     void generateMesh();
     Block& getBlockAt(const glm::ivec3& localPos);
