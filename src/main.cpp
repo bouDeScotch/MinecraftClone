@@ -4,6 +4,12 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
 #include <future>
+#include <queue>
+#include <mutex>
+#include <thread>
+#include <atomic>
+#include <chrono>
+
 
 #include "../include/Renderer.h"
 #include "../include/World.h"
@@ -114,6 +120,27 @@ glm::vec3 getLightDir() {
 }
 
 int main() {
+    World world;
+    
+    std::queue<Chunk*> chunksToUpload;
+    std::mutex chunksMutex;
+    std::atomic<bool> generatorRunning{true};
+
+    std::thread chunkGenerator([&world, &chunksToUpload, &chunksMutex, &generatorRunning](){
+        while(generatorRunning) {
+            for(auto& [pos, chunk] : world.chunkMap) {
+                if(!chunk.meshGenerated) {
+                    chunk.generateMesh();
+                    {
+                        std::lock_guard<std::mutex> lock(chunksMutex);
+                        chunksToUpload.push(&chunk);
+                    }
+                }
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(4));
+        }
+    });
+
     glfwInit();
     GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Mini Voxel Game", NULL, NULL);
     glfwMakeContextCurrent(window);
@@ -124,41 +151,14 @@ int main() {
     glEnable(GL_DEPTH_TEST);
 
     // Désactive VSync
-    glfwSwapInterval(1);
+    glfwSwapInterval(0);
 
     glfwSetCursorPosCallback(window, mouse_callback);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     renderer.init();
-    world.generateChunks(30, glm::ivec3(0,0,0));
-    std::cout << "Starting mesh generation for " << world.chunks.size() << " chunks...\n";
-
-    std::vector<std::future<void>> futures;
-
-    size_t n = world.chunks.size();
-    futures.reserve(n);
-    unsigned threads = std::max(1u, std::min((unsigned)n, std::thread::hardware_concurrency()));
-    // simple job system : spawn worker threads that pop indices from an atomic counter
-    std::atomic<size_t> idx{0};
-    std::vector<std::thread> workers;
-    float startTime = glfwGetTime();
-    for (unsigned t=0; t<threads; ++t) {
-        workers.emplace_back([&](){
-            while (true) {
-                size_t i = idx.fetch_add(1);
-                if (i >= n) break;
-                world.chunks[i].generateMesh(); // safe because no reallocation occurs
-            }
-        });
-    }
-    for (auto& th : workers) th.join();
-
-    for (auto& chunk : world.chunks) {
-        chunk.uploadMeshToGPU();
-    }
-    std::cout << "Mesh generation completed.\n";
-    float endTime = glfwGetTime();
-    std::cout << "Time taken: " << (endTime - startTime) << " seconds.\n";
+    std::cout << "Generating chunks...\n";
+    world.generateChunks(8, glm::ivec3(0,0,0));
     Shader shader("../shaders/vertex.glsl", "../shaders/fragment.glsl");
     Shader sunShader("../shaders/sun.vert", "../shaders/sun.frag");
 
@@ -173,6 +173,7 @@ int main() {
     int frames = 0;
     float fpsTimer = 0.0f;
 
+    std::cout << "Entering main loop...\n";
     while(!glfwWindowShouldClose(window)) {
         float currentFrame = glfwGetTime();
         deltaTime = currentFrame - lastFrame;
@@ -188,29 +189,54 @@ int main() {
 
         processInput(window, deltaTime);
 
-        // To debug, force camera orientation to look the sun
-        /*
-        camera.yaw = glm::degrees(atan2(getLightDir().z, getLightDir().x)) - 90.0f;
-        camera.pitch = glm::degrees(asin(getLightDir().y));
-        camera.front = glm::normalize(-getLightDir());
-        camera.up = glm::vec3(0.0f, 1.0f, 0.0f);
-        */
-
         glClearColor(0.1f, 0.1f, 0.15f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glm::mat4 view = glm::lookAt(player.position, player.position + camera.front, camera.up);
         glm::mat4 projection = glm::perspective(glm::radians(90.0f), (float)SCR_WIDTH/(float)SCR_HEIGHT, 0.1f, 10000.0f);
 
-        for (const auto& chunk : world.chunks) {
-            renderer.drawChunkMesh(chunk, shader, view, projection, getLightDir());
+        glm::ivec3 playerChunkPos = {
+            static_cast<int>(std::floor(player.position.x / Chunk::CHUNK_SIZE.x)),
+            static_cast<int>(std::floor(player.position.y / Chunk::CHUNK_SIZE.y)),
+            static_cast<int>(std::floor(player.position.z / Chunk::CHUNK_SIZE.z))
+        };
+
+        auto chunksToDraw = world.getAllChunksToDraw(playerChunkPos, 20);
+
+        // Créer les chunks manquants (toujours main thread)
+        for(const auto& pos : chunksToDraw) {
+            if(!world.getChunkAt(pos)) {
+                world.createChunkAt(pos);
+            }
         }
+
+        // Upload sur GPU les chunks prêts
+        {
+            std::lock_guard<std::mutex> lock(chunksMutex);
+            while(!chunksToUpload.empty()) {
+                Chunk* c = chunksToUpload.front();
+                chunksToUpload.pop();
+                c->uploadMeshToGPU();
+            }
+        }
+
+        // Draw chunks
+        for(const auto& pos : chunksToDraw) {
+            Chunk* chunk = world.getChunkAt(pos);
+            if(chunk && chunk->meshGenerated) {
+                renderer.drawChunkMesh(*chunk, shader, view, projection, getLightDir());
+            }
+        }
+
         renderer.drawSun(sunShader, view, projection, getLightDir());
 
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
 
+    generatorRunning = false;
+    if(chunkGenerator.joinable())
+        chunkGenerator.join();
     glfwTerminate();
     return 0;
 }

@@ -52,6 +52,7 @@ struct Vertex {
 class Chunk {
 public:
     std::vector<Block> blocks;
+    bool meshGenerated = false;
 
     static const glm::ivec3 CHUNK_SIZE;
     glm::ivec3 chunkPos;
@@ -71,7 +72,7 @@ private:
     std::vector<Vertex>   vertices;
     std::vector<uint32_t> indices;
 
-    std::vector<glm::ivec3> meshPositions;
+    std::vector<glm::ivec3> meshPositions; 
     std::vector<Face>      meshFaces;
     std::vector<BlockType> meshTypes;
 

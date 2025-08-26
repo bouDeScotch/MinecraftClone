@@ -20,46 +20,61 @@ static const siv::PerlinNoise::seed_type seed = time(0);
 
 const glm::ivec3 Chunk::CHUNK_SIZE = glm::ivec3(16, 128, 16);
 
+
 void Chunk::generate() {
-    
     meshPositions.reserve(Chunk::CHUNK_SIZE.x * Chunk::CHUNK_SIZE.y * Chunk::CHUNK_SIZE.z * 6);
     meshFaces.reserve(Chunk::CHUNK_SIZE.x * Chunk::CHUNK_SIZE.y * Chunk::CHUNK_SIZE.z * 6);
     meshTypes.reserve(Chunk::CHUNK_SIZE.x * Chunk::CHUNK_SIZE.y * Chunk::CHUNK_SIZE.z * 6);
     blocks.resize(Chunk::CHUNK_SIZE.x * Chunk::CHUNK_SIZE.y * Chunk::CHUNK_SIZE.z, {{0,0,0}, AIR});
 
-
     siv::PerlinNoise perlin(seed);
 
-    for (float x = 0; x < Chunk::CHUNK_SIZE.x; x++) {
+    for (int x = 0; x < Chunk::CHUNK_SIZE.x; x++) {
         int worldX = x + chunkPos.x * Chunk::CHUNK_SIZE.x;
-        for (float z = 0; z < Chunk::CHUNK_SIZE.z; z++) {
+
+        for (int z = 0; z < Chunk::CHUNK_SIZE.z; z++) {
             int worldZ = z + chunkPos.z * Chunk::CHUNK_SIZE.z;
             
-            float elevation = perlin.octave2D_01(worldX * 0.01f, worldZ * 0.01f, 6) * 80.0f;  
+            // Terrain params
+            float elevation = perlin.octave2D_01(worldX * 0.01f, worldZ * 0.01f, 6) * 80.0f;
+
             float temperature = perlin.octave2D_01(worldX * 0.002f, worldZ * 0.002f, 3);  
             float humidity    = perlin.octave2D_01(worldX * 0.002f + 100, worldZ * 0.002f + 100, 3);
-
-            
-            for (float y = 0; y < elevation && y < Chunk::CHUNK_SIZE.y; y++) {
+            for (int y = 0; y < Chunk::CHUNK_SIZE.y; y++) {
                 int worldY = y + chunkPos.y * Chunk::CHUNK_SIZE.y;
 
-                if (worldY < elevation - 5) {
-                    setBlockAt({x,y,z}, STONE);
-                } else if (worldY < elevation - 1) {
-                    setBlockAt({x,y,z}, DIRT);
-                } else {
-                    if (temperature < 0.3f && worldY > 60) {
-                        setBlockAt({x,y,z}, SNOW);   // neige sur les montagnes
-                    } else if (humidity < 0.3f) {
-                        setBlockAt({x,y,z}, SAND);   // désert
+                BlockType type = AIR;
+                if (worldY < elevation) {
+                    if (worldY < elevation - 5) {
+                        type = STONE;
+                    } else if (worldY < elevation - 1) {
+                        type = DIRT;
                     } else {
-                        setBlockAt({x,y,z}, GRASS);  // plaine
+                        if (temperature < 0.3f) {
+                            type = SNOW;
+                        } else if (humidity > 0.3f) {
+                            type = GRASS;
+                        } else {
+                            type = SAND;
+                        }
+                    }
+                } else if (worldY == static_cast<int>(elevation)) {
+                    // Surface block
+                    if (temperature < 0.3f) {
+                        type = SNOW;
+                    } else if (humidity > 0.3f) {
+                        type = GRASS;
+                    } else {
+                        type = SAND;
                     }
                 }
+
+                setBlockAt(glm::ivec3(x, y, z), type);
             }
         }
     }
 }
+
 
 inline const void Chunk::setBlockAt(const glm::ivec3& localPos, BlockType type) {
     int index = localPos.x 
@@ -148,6 +163,7 @@ void Chunk::generateMesh() {
     }
 
     addFaces(meshPositions, meshFaces, meshTypes);
+    meshGenerated = true;    
 }
 
 void Chunk::addFaces(const std::vector<glm::ivec3>& meshPositions, 
