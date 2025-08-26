@@ -202,6 +202,12 @@ int main() {
 
         auto chunksToDraw = world.getAllChunksToDraw(playerChunkPos, 20); 
 
+        // Generate chunk not generated yet
+        for(const auto& pos : chunksToDraw) {
+            if(!world.getChunkAt(pos)) {
+                world.createChunkAt(pos);
+            }
+        }
         // Upload sur GPU les chunks prêts
         {
             std::lock_guard<std::mutex> lock(chunksMutex);
