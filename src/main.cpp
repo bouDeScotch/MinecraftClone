@@ -24,10 +24,9 @@ bool isFullscreen = false;
 
 Player player;
 Camera camera;
-World world;
 Renderer renderer;
 
-void processInput(GLFWwindow *window, float deltaTime) {
+void processInput(GLFWwindow *window, float deltaTime, World& world) {
     float speed = 10.0f * deltaTime;
     if(glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
         player.move(camera.front * speed);
@@ -160,6 +159,7 @@ int main() {
     world.generateChunks(8, glm::ivec3(0,0,0));
     Shader shader("../shaders/vertex.glsl", "../shaders/fragment.glsl");
     Shader sunShader("../shaders/sun.vert", "../shaders/sun.frag");
+    Shader crosshairShader("../shaders/crosshair.vert", "../shaders/crosshair.frag");
 
     player.position = glm::vec3(0.0f, 137.0f, 0.0f);
     camera.position = player.position;
@@ -186,7 +186,7 @@ int main() {
             fpsTimer = 0.0f;
         }
 
-        processInput(window, deltaTime);
+        processInput(window, deltaTime, world);
 
         glClearColor(0.1f, 0.1f, 0.15f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -206,11 +206,11 @@ int main() {
         for(const auto& pos : chunksToDraw) {
             if(!world.getChunkAt(pos)) {
                 world.createChunkAt(pos);
-            }
+            } 
         }
         // Upload sur GPU les chunks prêts
         {
-            std::lock_guard<std::mutex> lock(chunksMutex);
+        std::lock_guard<std::mutex> lock(chunksMutex);
             while(!chunksToUpload.empty()) {
                 Chunk* c = chunksToUpload.front();
                 chunksToUpload.pop();
@@ -227,6 +227,7 @@ int main() {
         }
 
         renderer.drawSun(sunShader, view, projection, getLightDir());
+        renderer.drawCrosshair(crosshairShader);
 
         glfwSwapBuffers(window);
         glfwPollEvents();

@@ -36,6 +36,33 @@ public:
         }
     }
 
+    
+    bool isBlockSolid(const glm::ivec3& worldPos) {
+        // Calcul de la position du chunk correspondant
+        glm::ivec3 chunkPos = {
+            divFloor(worldPos.x, Chunk::CHUNK_SIZE.x),
+            divFloor(worldPos.y, Chunk::CHUNK_SIZE.y),
+            divFloor(worldPos.z, Chunk::CHUNK_SIZE.z)
+        };
+
+        Chunk* chunk = getChunkAt(chunkPos);
+        if (!chunk) return false; // chunk non généré => bloc vide
+
+        // Coordonnées locales dans le chunk
+        glm::ivec3 localPos = worldPos - chunkPos * Chunk::CHUNK_SIZE;
+
+        // Vérifie que la position est valide
+        if (localPos.x < 0 || localPos.x >= Chunk::CHUNK_SIZE.x ||
+            localPos.y < 0 || localPos.y >= Chunk::CHUNK_SIZE.y ||
+            localPos.z < 0 || localPos.z >= Chunk::CHUNK_SIZE.z) {
+            return false;
+        }
+
+        Block block = chunk->getBlockAt(localPos);
+        return block.type != AIR;
+    }
+
+
     void generateChunks(int radius, glm::ivec3 centerChunk) {
         for (int x = -radius; x <= radius; x++) {
             for (int z = -radius; z <= radius; z++) {
@@ -82,4 +109,10 @@ public:
         }
         return chunksToDraw;
     }
+
+private:
+
+int divFloor(int x, int size) {
+    return x >= 0 ? x / size : (x - size + 1) / size;
+}
 };

@@ -1,8 +1,11 @@
 #pragma once
+#include "Camera.h"
 #include "Chunk.h"
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include "Shader.h"
+#include "Player.h"
+#include "Camera.h"
 
 struct InstanceData {
     glm::vec3 offset;
@@ -22,12 +25,14 @@ public:
                        const glm::vec3 &lightDir = glm::vec3(0.5f));
 
     void drawSun(Shader& shader, const glm::mat4& view, const glm::mat4& projection, glm::vec3 lightDir);
+    void drawCrosshair(Shader& shader);
 private:
     unsigned int cubeVAO, cubeVBO;
 
     GLuint instanceVBO;
 
     GLuint sunVAO, sunVBO;
+    GLuint crosshairVAO, crosshairVBO;
 
     void setupCube();
     void loadTextures(std::string filepath);
