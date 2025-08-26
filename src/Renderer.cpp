@@ -51,6 +51,62 @@ void Renderer::loadTextures(std::string filepath) {
 }
 
 
+
+struct SunVertex {
+    glm::vec3 pos;
+    glm::vec2 uv;
+};
+
+void Renderer::drawSun(Shader& shader, const glm::mat4& view, const glm::mat4& projection, glm::vec3 lightDir) {
+    glm::vec3 lightDirNorm = glm::normalize(lightDir);
+    glm::vec3 sunPos = lightDirNorm * 1000.0f;
+
+    static const float size = 100.0f;
+
+    glm::vec3 cameraRight = glm::vec3(view[0][0], view[1][0], view[2][0]);
+    glm::vec3 cameraUp    = glm::vec3(view[0][1], view[1][1], view[2][1]);
+
+    // Créer les sommets avec UV
+    std::vector<SunVertex> quadVerts = {
+        {sunPos - cameraRight*size - cameraUp*size, glm::vec2(0.0f, 0.0f)}, // bas gauche
+        {sunPos + cameraRight*size - cameraUp*size, glm::vec2(1.0f, 0.0f)}, // bas droite
+        {sunPos + cameraRight*size + cameraUp*size, glm::vec2(1.0f, 1.0f)}, // haut droite
+        {sunPos - cameraRight*size + cameraUp*size, glm::vec2(0.0f, 1.0f)}  // haut gauche
+    };
+
+    if (sunVBO == 0) {
+        glGenVertexArrays(1, &sunVAO);
+        glGenBuffers(1, &sunVBO);
+    }
+
+    glBindVertexArray(sunVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, sunVBO);
+    glBufferData(GL_ARRAY_BUFFER, quadVerts.size() * sizeof(SunVertex), quadVerts.data(), GL_DYNAMIC_DRAW);
+
+    // Position
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(SunVertex), (void*)0);
+
+    // UV
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(SunVertex), (void*)offsetof(SunVertex, uv));
+
+    shader.use();
+    shader.setMat4("view", view);
+    shader.setMat4("projection", projection);
+    shader.setVec3("sunColor", glm::vec3(1.0f, 1.0f, 0.8f));
+
+    
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+    glBindVertexArray(0);
+}
+
+
+
+
 void Renderer::setupCube() {
     enum DIRS {
         UP = 0,

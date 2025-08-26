@@ -13,7 +13,7 @@ static std::map<BlockType, BlockTexture> blockTextures = {
     {WOOD, {6, 6, 6, 6, 7, 7}},
     {LEAF, {5, 5, 5, 5, 5, 5}},
     {SAND, {4, 4, 4, 4, 4, 4}},
-    {SNOW, {8, 8, 8, 8, 8, 8}},
+    {SNOW, {11, 11, 11, 11, 11, 11}},
 };
 
 static const siv::PerlinNoise::seed_type seed = time(0);

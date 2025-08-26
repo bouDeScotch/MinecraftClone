@@ -8,8 +8,8 @@ void Player::move(const glm::vec3& delta) {
     position += delta;
 }
 
-void Player::placeBlock(class World& world, BlockType type) {
-    glm::vec3 blockPos = glm::round(position);
+void Player::placeBlock(class World& world, BlockType type, Camera& camera) {
+    glm::vec3 blockPos = glm::round(position - glm::vec3(0.5) + camera.front * 9.0f);
     Block block;
     block.position = blockPos;
     block.type = type;

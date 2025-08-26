@@ -19,8 +19,10 @@ bool isFullscreen = false;
 
 Player player;
 Camera camera;
+World world;
+Renderer renderer;
 
-void processInput(GLFWwindow *window, float deltaTime, World& world) {
+void processInput(GLFWwindow *window, float deltaTime) {
     float speed = 10.0f * deltaTime;
     if(glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
         player.move(camera.front * speed);
@@ -38,7 +40,7 @@ void processInput(GLFWwindow *window, float deltaTime, World& world) {
     static bool wasPressed = false;
     if(glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
         if (!wasPressed) {
-            player.placeBlock(world, BlockType::LEAF);
+            player.placeBlock(world, BlockType::LEAF, camera);
             wasPressed = true;
         }
     } else {
@@ -101,6 +103,16 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
     glViewport(0,0,width,height);
 }
 
+glm::vec3 getLightDir() {
+    // Use time to create a moving light direction
+    float time = glfwGetTime() * 0.1f; // Slow down the movement
+    static float theta = .3; // Angle d'inclinaison avec le plan (Oxy)
+    float z = sin(theta);
+    float x = cos(time) * cos(theta);
+    float y = sin(time) * cos(theta);
+    return glm::normalize(glm::vec3(x, y, z));
+}
+
 int main() {
     glfwInit();
     GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Mini Voxel Game", NULL, NULL);
@@ -112,14 +124,12 @@ int main() {
     glEnable(GL_DEPTH_TEST);
 
     // Désactive VSync
-    glfwSwapInterval(0);
+    glfwSwapInterval(1);
 
     glfwSetCursorPosCallback(window, mouse_callback);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-    Renderer renderer;
     renderer.init();
-    World world;
     world.generateChunks(30, glm::ivec3(0,0,0));
     std::cout << "Starting mesh generation for " << world.chunks.size() << " chunks...\n";
 
@@ -150,6 +160,7 @@ int main() {
     float endTime = glfwGetTime();
     std::cout << "Time taken: " << (endTime - startTime) << " seconds.\n";
     Shader shader("../shaders/vertex.glsl", "../shaders/fragment.glsl");
+    Shader sunShader("../shaders/sun.vert", "../shaders/sun.frag");
 
     player.position = glm::vec3(0.0f, 137.0f, 0.0f);
     camera.position = player.position;
@@ -175,17 +186,26 @@ int main() {
             fpsTimer = 0.0f;
         }
 
-        processInput(window, deltaTime, world);
+        processInput(window, deltaTime);
+
+        // To debug, force camera orientation to look the sun
+        /*
+        camera.yaw = glm::degrees(atan2(getLightDir().z, getLightDir().x)) - 90.0f;
+        camera.pitch = glm::degrees(asin(getLightDir().y));
+        camera.front = glm::normalize(-getLightDir());
+        camera.up = glm::vec3(0.0f, 1.0f, 0.0f);
+        */
 
         glClearColor(0.1f, 0.1f, 0.15f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glm::mat4 view = glm::lookAt(player.position, player.position + camera.front, camera.up);
-        glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH/(float)SCR_HEIGHT, 0.1f, 1000.0f);
+        glm::mat4 projection = glm::perspective(glm::radians(90.0f), (float)SCR_WIDTH/(float)SCR_HEIGHT, 0.1f, 10000.0f);
 
         for (const auto& chunk : world.chunks) {
-            renderer.drawChunkMesh(chunk, shader, view, projection, -camera.front);
+            renderer.drawChunkMesh(chunk, shader, view, projection, getLightDir());
         }
+        renderer.drawSun(sunShader, view, projection, getLightDir());
 
         glfwSwapBuffers(window);
         glfwPollEvents();
