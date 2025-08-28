@@ -53,11 +53,14 @@ void Renderer::loadTextures(std::string filepath) {
 
 
     // Not a texture but will go here for now
+    // Triangle covering whole screen
     float crosshairVertices[] = {
-        -0.02f,  0.02f, 0.0f,
-         0.02f,  0.02f, 0.0f,
-        -0.02f, -0.02f, 0.0f,
-         0.02f, -0.02f, 0.0f,
+        -1.0f, -1.0f,
+        -1.0f,  1.0f,
+         1.0f, -1.0f,
+         1.0f,  1.0f,
+        -1.0f,  1.0f,
+         1.0f, -1.0f
     };
     glGenVertexArrays(1, &crosshairVAO);
     glGenBuffers(1, &crosshairVBO);
@@ -66,7 +69,7 @@ void Renderer::loadTextures(std::string filepath) {
     glBindBuffer(GL_ARRAY_BUFFER, crosshairVBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(crosshairVertices), crosshairVertices, GL_STATIC_DRAW);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
     glBindVertexArray(0);
 }
 
@@ -125,8 +128,9 @@ void Renderer::drawSun(Shader& shader, const glm::mat4& view, const glm::mat4& p
 void Renderer::drawCrosshair(Shader& shader) { 
     shader.use();
     shader.setVec3("color", glm::vec3(1.0f));
+    shader.setFloat("size", 10.0f);
     glBindVertexArray(crosshairVAO);
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
     glBindVertexArray(0);
 }
 

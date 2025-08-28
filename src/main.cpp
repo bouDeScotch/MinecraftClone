@@ -25,9 +25,8 @@ bool isFullscreen = false;
 Player player;
 Camera camera;
 Renderer renderer;
-
 void processInput(GLFWwindow *window, float deltaTime, World& world) {
-    float speed = 10.0f * deltaTime;
+    float speed = 100.0f * deltaTime;
     if(glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
         player.move(camera.front * speed);
     if(glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
@@ -104,7 +103,10 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
 }
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
+
     glViewport(0,0,width,height);
+    SCR_WIDTH = width;
+    SCR_HEIGHT = height;
 }
 
 glm::vec3 getLightDir() {
@@ -206,6 +208,7 @@ int main() {
         for(const auto& pos : chunksToDraw) {
             if(!world.getChunkAt(pos)) {
                 world.createChunkAt(pos);
+                world.generateStructureInChunk(pos);
             } 
         }
         // Upload sur GPU les chunks prêts
@@ -227,6 +230,8 @@ int main() {
         }
 
         renderer.drawSun(sunShader, view, projection, getLightDir());
+        crosshairShader.use();
+        crosshairShader.setVec2("u_ScreenSize", glm::vec2(SCR_WIDTH, SCR_HEIGHT));
         renderer.drawCrosshair(crosshairShader);
 
         glfwSwapBuffers(window);

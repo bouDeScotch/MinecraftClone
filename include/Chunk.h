@@ -12,6 +12,7 @@ enum BlockType {
     WOOD,
     LEAF,
     SAND,
+    PUMPKIN,
     SNOW
 };
 
@@ -66,7 +67,7 @@ public:
 
     void generateMesh();
     Block& getBlockAt(const glm::ivec3& localPos);
-    const void setBlockAt(const glm::ivec3& localPos, BlockType type);
+    void setBlockAt(const glm::ivec3& localPos, BlockType type);
     void uploadMeshToGPU();
 
 private:

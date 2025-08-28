@@ -13,6 +13,7 @@ static std::map<BlockType, BlockTexture> blockTextures = {
     {WOOD, {6, 6, 6, 6, 7, 7}},
     {LEAF, {5, 5, 5, 5, 5, 5}},
     {SAND, {4, 4, 4, 4, 4, 4}},
+    {PUMPKIN, {8, 9, 9, 9, 9, 10}},
     {SNOW, {11, 11, 11, 11, 11, 11}},
 };
 
@@ -63,6 +64,11 @@ void Chunk::generate(siv::PerlinNoise& perlin) {
                     } else {
                         type = SAND;
                     }
+                } else if (worldY == static_cast<int>(elevation) + 1 && type == GRASS) {
+                    if (0.8f < humidity && humidity < 0.9f && temperature > 0.3f) {
+                        type = PUMPKIN;
+                        std::cout << "Pumpkin at " << worldX << ", " << worldY << ", " << worldZ << std::endl;
+                    }                    
                 }
 
                 setBlockAt(glm::ivec3(x, y, z), type);
@@ -72,7 +78,7 @@ void Chunk::generate(siv::PerlinNoise& perlin) {
 }
 
 
-inline const void Chunk::setBlockAt(const glm::ivec3& localPos, BlockType type) {
+void Chunk::setBlockAt(const glm::ivec3& localPos, BlockType type) {
     int index = localPos.x 
               + localPos.y * CHUNK_SIZE.x
               + localPos.z * CHUNK_SIZE.x * CHUNK_SIZE.y;
@@ -81,7 +87,7 @@ inline const void Chunk::setBlockAt(const glm::ivec3& localPos, BlockType type) 
 }
 
 
-inline Block& Chunk::getBlockAt(const glm::ivec3& localPos) {
+Block& Chunk::getBlockAt(const glm::ivec3& localPos) {
     // Out of bounds check
     if (localPos.x < 0 || localPos.x >= CHUNK_SIZE.x ||
         localPos.y < 0 || localPos.y >= CHUNK_SIZE.y ||

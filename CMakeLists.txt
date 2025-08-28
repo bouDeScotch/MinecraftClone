@@ -10,6 +10,8 @@ set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 
+set(CMAKE_EXE_LINKER_FLAGS "-static-libgcc -static-libstdc++")
+
 include(FetchContent)
 
 # GLFW
@@ -19,12 +21,19 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(glfw)
 
-# GLAD (loader)
+# GLAD
 FetchContent_Declare(
   glad
   GIT_REPOSITORY https://github.com/Dav1dde/glad.git
 )
 FetchContent_MakeAvailable(glad)
+
+# GLM (header-only)
+FetchContent_Declare(
+  glm
+  GIT_REPOSITORY https://github.com/g-truc/glm.git
+)
+FetchContent_MakeAvailable(glm)
 
 add_executable(app
     src/main.cpp
@@ -35,15 +44,12 @@ add_executable(app
     src/Renderer.cpp
     src/Shader.cpp
 )
+target_compile_definitions(app PRIVATE GLM_ENABLE_EXPERIMENTAL)
+target_link_libraries(app PRIVATE glfw glad glm)
 
-# include directories (glad provides target 'glad')
-target_link_libraries(app PRIVATE glfw glad ${CMAKE_DL_LIBS})
-find_package(glm CONFIG REQUIRED)
-target_link_libraries(app PRIVATE glm::glm)
 if (WIN32)
     target_link_libraries(app PRIVATE opengl32 gdi32)
+elseif (UNIX AND NOT APPLE)
+    find_package(OpenGL REQUIRED)
+    target_link_libraries(app PRIVATE OpenGL::GL X11 Xi Xrandr Xxf86vm Xinerama Xcursor pthread dl)
 endif()
-
-# On some systems you may need to link X11 or pthreads automatically (usually handled by glfw)
-# if you want warnings as errors uncomment:
-# target_compile_options(app PRIVATE -Wall -Wextra -Werror)
