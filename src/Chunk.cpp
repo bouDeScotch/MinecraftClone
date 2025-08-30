@@ -317,10 +317,35 @@ void Chunk::saveToFile(const std::string& filename) {
         if (block.type != AIR) nonAirCount++;
     }
     file.write(reinterpret_cast<const char*>(&nonAirCount), sizeof(nonAirCount));
+    // Instead of writing each blocks, we write the data in two parts :
+    // 1. A list of positions of non-air blocks
+    // 2. A list of types of non-air blocks
+    // This will allow to compress better the data later, because types are often repeated
+    // so we can use run-length encoding or other compression techniques
+    std::vector<glm::ivec3> positions;
+    positions.reserve(nonAirCount);
+    std::vector<BlockType> types;
+    types.reserve(nonAirCount);
     for (const auto& block : blocks) {
         if (block.type == AIR) continue;
-        file.write(reinterpret_cast<const char*>(&block), sizeof(Block));
+        positions.push_back(glm::ivec3(block.position));
+        types.push_back(block.type);
     }
+
+    // Add positions to file
+    file.write(reinterpret_cast<const char*>(positions.data()), positions.size() * sizeof(glm::ivec3));
+    // Now instead of writing each type as a byte, we will use a simple form of run-length encoding (RLE)
+    for (size_t i = 0; i < types.size(); ) {
+        BlockType currentType = types[i];
+        uint8_t runLength = 1;
+        while (i + runLength < types.size() && types[i + runLength] == currentType && runLength < 255) {
+            runLength++;
+        }
+        file.write(reinterpret_cast<const char*>(&currentType), sizeof(BlockType));
+        file.write(reinterpret_cast<const char*>(&runLength), sizeof(uint8_t));
+        i += runLength;
+    }
+    file.close();
 }
 
 bool Chunk::isInFile(const std::string& filename) {
@@ -343,11 +368,37 @@ void Chunk::loadFromFile(const std::string& filename) {
     file.read(reinterpret_cast<char*>(&nonAirCount), sizeof(nonAirCount));
     blocks.clear();
     blocks.resize(CHUNK_SIZE.x * CHUNK_SIZE.y * CHUNK_SIZE.z, {{0,0,0}, AIR});
-    for (int i = 0; i < nonAirCount; ++i) {
-        Block block;
-        file.read(reinterpret_cast<char*>(&block), sizeof(Block));
-        glm::ivec3 localPos = glm::ivec3(block.position);
-        setBlockAt(localPos, block.type);
+    // First read positions of non-air blocks
+    std::vector<glm::ivec3> positions(nonAirCount);
+    file.read(reinterpret_cast<char*>(positions.data()), nonAirCount * sizeof(glm::ivec3));
+    // Then read types with RLE decoding
+    std::vector<BlockType> types;
+    types.reserve(nonAirCount);
+    while (types.size() < static_cast<size_t>(nonAirCount) && file) {
+        BlockType type;
+        uint8_t runLength;
+        file.read(reinterpret_cast<char*>(&type), sizeof(BlockType));
+        file.read(reinterpret_cast<char*>(&runLength), sizeof(uint8_t));
+        for (uint8_t i = 0; i < runLength; ++i) {
+            types.push_back(type);
+        }
     }
-    file.close();
+
+    // Now we have positions and types, we can reconstruct the blocks
+    for (size_t i = 0; i < positions.size() && i < types.size(); ++i) {
+        glm::ivec3 pos = positions[i];
+        BlockType type = types[i];
+        if (pos.x < 0 || pos.x >= CHUNK_SIZE.x ||
+            pos.y < 0 || pos.y >= CHUNK_SIZE.y ||
+            pos.z < 0 || pos.z >= CHUNK_SIZE.z) {
+            continue; // out of bounds
+        }
+        int index = pos.x 
+                  + pos.y * CHUNK_SIZE.x
+                  + pos.z * CHUNK_SIZE.x * CHUNK_SIZE.y;
+        blocks[index].type = type;
+        blocks[index].position = glm::vec3(pos);
+
+        file.close();
+    }
 }
