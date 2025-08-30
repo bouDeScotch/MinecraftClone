@@ -285,6 +285,28 @@ public:
         return chunksToDraw;
     }
 
+    void removeBlock(const glm::ivec3& worldPos) {
+        glm::ivec3 chunkPos = {
+            divFloor(worldPos.x, Chunk::CHUNK_SIZE.x),
+            divFloor(worldPos.y, Chunk::CHUNK_SIZE.y),
+            divFloor(worldPos.z, Chunk::CHUNK_SIZE.z)
+        };
+
+        Chunk* chunk = getChunkAt(chunkPos);
+        if (!chunk) return; // chunk non généré
+
+        glm::ivec3 localPos = worldPos - chunkPos * Chunk::CHUNK_SIZE;
+
+        if (localPos.x < 0 || localPos.x >= Chunk::CHUNK_SIZE.x ||
+            localPos.y < 0 || localPos.y >= Chunk::CHUNK_SIZE.y ||
+            localPos.z < 0 || localPos.z >= Chunk::CHUNK_SIZE.z) {
+            return; // out of bounds
+        }
+
+        chunk->setBlockAt(localPos, AIR);
+        chunk->meshGenerated = false; // for regeneration
+    }
+
 private:
 
 int divFloor(int x, int size) {

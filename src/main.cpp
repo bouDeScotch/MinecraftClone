@@ -64,16 +64,26 @@ void processInput(GLFWwindow *window, float deltaTime, World& world) {
     player.updatePosition(deltaTime);
     player.collideWithWorld(world);
 
-    std::cout << "Player Y position: " << player.position.y << " | Ground Y: " << world.getActualHeightAt(player.position.x, player.position.z) << "\n";
     // Detect right click and place a block
-    static bool wasPressed = false;
+    static bool rightWasPressed = false;
     if(glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
-        if (!wasPressed) {
+        if (!rightWasPressed) {
             player.placeBlock(world, BlockType::LEAF, camera);
-            wasPressed = true;
+            rightWasPressed = true;
         }
     } else {
-        wasPressed = false;
+        rightWasPressed = false;
+    }
+
+    // Detect left click and break a block
+    static bool leftWasPressed = false;
+    if(glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+        if (!leftWasPressed) {
+            player.breakBlock(world, camera);
+            leftWasPressed = true;
+        }
+    } else {
+        leftWasPressed = false;
     }
 
     static bool escWasPressed = false;

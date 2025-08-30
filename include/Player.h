@@ -20,6 +20,7 @@ public:
     Player();
 
     void placeBlock(class World& world, BlockType type, Camera& camera);
+    void breakBlock(class World& world, Camera& camera);
     void clampVelocity();
 
     void jump(float deltaTime);
