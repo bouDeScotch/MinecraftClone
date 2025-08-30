@@ -256,7 +256,7 @@ void Renderer::drawChunkMesh(const Chunk& chunk, Shader& shader,
     shader.setMat4("view", view);
     shader.setMat4("projection", projection);
     shader.setMat4("model", glm::mat4(1.0f));
-    shader.setInt("atlasSize", /* ex */ 4);
+    shader.setInt("atlasSize", /* ex */ 6);
     shader.setVec3("lightDir", lightDir);
 
     glBindVertexArray(chunk.gl.vao);

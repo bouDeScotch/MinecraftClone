@@ -14,7 +14,11 @@ enum BlockType {
     LEAF,
     SAND,
     PUMPKIN,
-    SNOW
+    SNOW,
+    COBBLESTONE,
+    BRICK,
+    PLANKS,
+    IRON_ORE
 };
 
 enum Face {
