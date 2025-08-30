@@ -18,6 +18,10 @@ static std::map<BlockType, BlockTexture> blockTextures = {
     {SAND, {4, 4, 4, 4, 4, 4}},
     {PUMPKIN, {8, 9, 9, 9, 9, 10}},
     {SNOW, {11, 11, 11, 11, 11, 11}},
+    {COBBLESTONE, {12, 12, 12, 12, 12, 12}},
+    {BRICK, {13, 13, 13, 13, 13, 13}},
+    {PLANKS, {14, 14, 14, 14, 14, 14}},
+    {IRON_ORE, {15, 15, 15, 15, 15, 15}},
 };
 
 enum Biomes {
@@ -74,10 +78,24 @@ void Chunk::generate(siv::PerlinNoise& perlin) {
                             setBlockAt({x, y, z}, SAND);
                             break;
                         case FOREST:
-                            setBlockAt({x, y, z}, GRASS);
+                            // Add wooden planks occasionally in forest areas
+                            float forestNoise = perlin.octave2D_01(worldX * 0.2f, worldZ * 0.2f, 2);
+                            if (forestNoise > 0.9f) {
+                                setBlockAt({x, y, z}, PLANKS);
+                            } else {
+                                setBlockAt({x, y, z}, GRASS);
+                            }
                             break;
                         case MOUNTAINS:
-                            setBlockAt({x, y, z}, STONE);
+                            // Add some architectural variety to mountains
+                            float mountainNoise = perlin.octave2D_01(worldX * 0.1f, worldZ * 0.1f, 3);
+                            if (mountainNoise > 0.8f) {
+                                setBlockAt({x, y, z}, BRICK);
+                            } else if (mountainNoise > 0.7f) {
+                                setBlockAt({x, y, z}, COBBLESTONE);
+                            } else {
+                                setBlockAt({x, y, z}, STONE);
+                            }
                             break;
                         case SNOWY:
                             setBlockAt({x, y, z}, SNOW);
@@ -112,7 +130,18 @@ void Chunk::generate(siv::PerlinNoise& perlin) {
                 }
                 // Deep underground blocks
                 else {
-                    setBlockAt({x, y, z}, STONE);
+                    // Generate ore deposits using noise
+                    float oreNoise = perlin.octave3D_01(worldX * 0.05f, y * 0.05f, worldZ * 0.05f, 4);
+                    
+                    if (oreNoise > 0.7f && y < 30) {
+                        // Iron ore deposits at lower depths
+                        setBlockAt({x, y, z}, IRON_ORE);
+                    } else if (oreNoise > 0.8f && y < 50) {
+                        // Cobblestone patches in mid-depths  
+                        setBlockAt({x, y, z}, COBBLESTONE);
+                    } else {
+                        setBlockAt({x, y, z}, STONE);
+                    }
                 }
             }
         }
