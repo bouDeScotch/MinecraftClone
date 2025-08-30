@@ -53,6 +53,8 @@ void Chunk::generate(siv::PerlinNoise& perlin) {
 
             float temperature = perlin.octave2D_01(worldX * 0.002f, worldZ * 0.002f, 3);  
             float humidity    = perlin.octave2D_01(worldX * 0.002f + 100, worldZ * 0.002f + 100, 3);
+            float forestNoise = perlin.octave2D_01(worldX * 0.05f + 200, worldZ * 0.05f + 200, 3);
+            float mountainNoise = perlin.octave2D_01(worldX * 0.01f + 300, worldZ * 0.01f + 300, 3);
             Biomes biome;
             if (temperature < 0.3f && humidity < 0.3f)
                 biome = SNOWY;
@@ -64,6 +66,8 @@ void Chunk::generate(siv::PerlinNoise& perlin) {
                 biome = SNOWY;
             else if (humidity > 0.7f)
                 biome = SWAMP;
+            else if (elevation > 60)
+                biome = MOUNTAINS;
             else
                 biome = PLAINS;
             for (int y = 0; y < Chunk::CHUNK_SIZE.y; y++) {
@@ -79,7 +83,6 @@ void Chunk::generate(siv::PerlinNoise& perlin) {
                             break;
                         case FOREST:
                             // Add wooden planks occasionally in forest areas
-                            float forestNoise = perlin.octave2D_01(worldX * 0.2f, worldZ * 0.2f, 2);
                             if (forestNoise > 0.9f) {
                                 setBlockAt({x, y, z}, PLANKS);
                             } else {
@@ -88,7 +91,6 @@ void Chunk::generate(siv::PerlinNoise& perlin) {
                             break;
                         case MOUNTAINS:
                             // Add some architectural variety to mountains
-                            float mountainNoise = perlin.octave2D_01(worldX * 0.1f, worldZ * 0.1f, 3);
                             if (mountainNoise > 0.8f) {
                                 setBlockAt({x, y, z}, BRICK);
                             } else if (mountainNoise > 0.7f) {
