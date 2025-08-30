@@ -24,4 +24,7 @@ public:
 
     void jump(float deltaTime);
     void updatePosition(float deltaTime);
+    void collideWithWorld(World& world);
+
+    bool isOnGround(World& world);
 };

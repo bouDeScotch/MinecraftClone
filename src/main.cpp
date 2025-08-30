@@ -33,6 +33,8 @@ void processInput(GLFWwindow *window, float deltaTime, World& world) {
     movementRight = glm::normalize(movementRight);
 
     player.velocity = glm::vec3(0.0f, player.velocity.y, 0.0f);
+
+    glm::ivec3 blockPos = glm::floor(player.position);
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
         player.velocity += movementFront * player.maxSpeed;
     } 
@@ -47,24 +49,22 @@ void processInput(GLFWwindow *window, float deltaTime, World& world) {
     }
     if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
         // Check if on ground (simple check)
-        float worldY = world.getActualHeightAt(player.position.x, player.position.z);
-        if (player.position.y <= worldY + 1.01f) { // small epsilon
+        if (player.isOnGround(world)) {
             player.jump(deltaTime);
         }
     }
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
         // Check if not on ground
-        float worldY = world.getActualHeightAt(player.position.x, player.position.z);
-        if (player.position.y > worldY + 1.01f) { // small epsilon
-            player.velocity.y = -20.0f;
+        if (!player.isOnGround(world)) {
+            player.velocity.y = -player.maxVerticalSpeed;
         }
     }
     player.velocity += Player::GRAVITY * deltaTime;
     player.clampVelocity();
     player.updatePosition(deltaTime);
+    player.collideWithWorld(world);
 
-    // Print velocity magnitude for debugging
-    std::cout << "Velocity magnitude: " << glm::length(player.velocity) << std::endl;
+    std::cout << "Player Y position: " << player.position.y << " | Ground Y: " << world.getActualHeightAt(player.position.x, player.position.z) << "\n";
     // Detect right click and place a block
     static bool wasPressed = false;
     if(glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
@@ -213,13 +213,14 @@ int main() {
             frames = 0;
             fpsTimer = 0.0f;
         }
+        camera.position = player.position + glm::vec3(0.0f, 1.8f, 0.0f);
 
         processInput(window, deltaTime, world);
 
         glClearColor(0.1f, 0.1f, 0.15f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        glm::mat4 view = glm::lookAt(player.position, player.position + camera.front, camera.up);
+        glm::mat4 view = glm::lookAt(camera.position, camera.position + camera.front, camera.up);
         glm::mat4 projection = glm::perspective(glm::radians(90.0f), (float)SCR_WIDTH/(float)SCR_HEIGHT, 0.1f, 10000.0f);
 
         glm::ivec3 playerChunkPos = {
