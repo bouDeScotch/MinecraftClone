@@ -4,6 +4,7 @@
 #include <map>
 #include <time.h>
 #include <fstream>
+#include <vector>
 
 // Block texture is
 // {front, back, left, right, top, bottom}
@@ -308,18 +309,50 @@ void Chunk::saveToFile(const std::string& filename) {
         return;
     }
 
+    // Write file format version (for backward compatibility)
+    uint32_t fileVersion = 3; // RLE compressed format
+    file.write(reinterpret_cast<const char*>(&fileVersion), sizeof(fileVersion));
+
     // Write chunk position
     file.write(reinterpret_cast<const char*>(&chunkPos), sizeof(chunkPos));
-    // Write block data
-    // Instead of writing every block, we will optimize by writing only non-AIR blocks
-    int nonAirCount = 0;
-    for (const auto& block : blocks) {
-        if (block.type != AIR) nonAirCount++;
+    
+    // Collect non-AIR blocks and apply RLE compression
+    std::vector<uint32_t> compressedIndices;
+    std::vector<uint8_t> compressedTypes;
+    std::vector<uint32_t> runLengths;
+    
+    uint32_t currentIndex = 0;
+    while (currentIndex < blocks.size()) {
+        if (blocks[currentIndex].type != AIR) {
+            BlockType currentType = blocks[currentIndex].type;
+            uint32_t runLength = 1;
+            uint32_t startIndex = currentIndex;
+            
+            // Look for consecutive blocks of the same type
+            while (currentIndex + runLength < blocks.size() && 
+                   blocks[currentIndex + runLength].type == currentType) {
+                runLength++;
+            }
+            
+            compressedIndices.push_back(startIndex);
+            compressedTypes.push_back(static_cast<uint8_t>(currentType));
+            runLengths.push_back(runLength);
+            
+            currentIndex += runLength;
+        } else {
+            currentIndex++;
+        }
     }
-    file.write(reinterpret_cast<const char*>(&nonAirCount), sizeof(nonAirCount));
-    for (const auto& block : blocks) {
-        if (block.type == AIR) continue;
-        file.write(reinterpret_cast<const char*>(&block), sizeof(Block));
+    
+    // Write compressed block count
+    uint32_t compressedCount = static_cast<uint32_t>(compressedIndices.size());
+    file.write(reinterpret_cast<const char*>(&compressedCount), sizeof(compressedCount));
+    
+    // Write RLE compressed data: index + type + runLength triplets
+    for (uint32_t i = 0; i < compressedCount; ++i) {
+        file.write(reinterpret_cast<const char*>(&compressedIndices[i]), sizeof(uint32_t));
+        file.write(reinterpret_cast<const char*>(&compressedTypes[i]), sizeof(uint8_t));
+        file.write(reinterpret_cast<const char*>(&runLengths[i]), sizeof(uint32_t));
     }
 }
 
@@ -337,17 +370,88 @@ void Chunk::loadFromFile(const std::string& filename) {
         return;
     }
 
-    // Read chunk position
-    file.read(reinterpret_cast<char*>(&chunkPos), sizeof(chunkPos));
-    int nonAirCount = 0;
-    file.read(reinterpret_cast<char*>(&nonAirCount), sizeof(nonAirCount));
+    // Clear and initialize blocks array
     blocks.clear();
     blocks.resize(CHUNK_SIZE.x * CHUNK_SIZE.y * CHUNK_SIZE.z, {{0,0,0}, AIR});
-    for (int i = 0; i < nonAirCount; ++i) {
-        Block block;
-        file.read(reinterpret_cast<char*>(&block), sizeof(Block));
-        glm::ivec3 localPos = glm::ivec3(block.position);
-        setBlockAt(localPos, block.type);
+
+    // Try to read file version first
+    uint32_t fileVersion = 1; // Default to old format
+    file.read(reinterpret_cast<char*>(&fileVersion), sizeof(fileVersion));
+    
+    if (fileVersion == 3) {
+        // RLE compressed format
+        // Read chunk position
+        file.read(reinterpret_cast<char*>(&chunkPos), sizeof(chunkPos));
+        
+        // Read compressed block count
+        uint32_t compressedCount = 0;
+        file.read(reinterpret_cast<char*>(&compressedCount), sizeof(compressedCount));
+        
+        // Read RLE compressed data
+        for (uint32_t i = 0; i < compressedCount; ++i) {
+            uint32_t startIndex;
+            uint8_t blockType;
+            uint32_t runLength;
+            
+            file.read(reinterpret_cast<char*>(&startIndex), sizeof(uint32_t));
+            file.read(reinterpret_cast<char*>(&blockType), sizeof(uint8_t));
+            file.read(reinterpret_cast<char*>(&runLength), sizeof(uint32_t));
+            
+            // Apply run-length encoding
+            for (uint32_t j = 0; j < runLength && (startIndex + j) < blocks.size(); ++j) {
+                uint32_t blockIndex = startIndex + j;
+                blocks[blockIndex].type = static_cast<BlockType>(blockType);
+                
+                // Calculate position from index
+                int x = blockIndex % CHUNK_SIZE.x;
+                int y = (blockIndex / CHUNK_SIZE.x) % CHUNK_SIZE.y;
+                int z = blockIndex / (CHUNK_SIZE.x * CHUNK_SIZE.y);
+                blocks[blockIndex].position = glm::ivec3(x, y, z);
+            }
+        }
+    } else if (fileVersion == 2) {
+        // Standard optimized format
+        // Read chunk position
+        file.read(reinterpret_cast<char*>(&chunkPos), sizeof(chunkPos));
+        
+        // Read block count
+        uint32_t nonAirCount = 0;
+        file.read(reinterpret_cast<char*>(&nonAirCount), sizeof(nonAirCount));
+        
+        // Read optimized block data
+        for (uint32_t i = 0; i < nonAirCount; ++i) {
+            uint32_t blockIndex;
+            uint8_t blockType;
+            file.read(reinterpret_cast<char*>(&blockIndex), sizeof(uint32_t));
+            file.read(reinterpret_cast<char*>(&blockType), sizeof(uint8_t));
+            
+            if (blockIndex < blocks.size()) {
+                blocks[blockIndex].type = static_cast<BlockType>(blockType);
+                
+                // Calculate position from index
+                int x = blockIndex % CHUNK_SIZE.x;
+                int y = (blockIndex / CHUNK_SIZE.x) % CHUNK_SIZE.y;
+                int z = blockIndex / (CHUNK_SIZE.x * CHUNK_SIZE.y);
+                blocks[blockIndex].position = glm::ivec3(x, y, z);
+            }
+        }
+    } else {
+        // Old format - fileVersion was actually chunkPos.x
+        // Rewind and read as old format
+        file.seekg(0, std::ios::beg);
+        
+        // Read chunk position
+        file.read(reinterpret_cast<char*>(&chunkPos), sizeof(chunkPos));
+        int nonAirCount = 0;
+        file.read(reinterpret_cast<char*>(&nonAirCount), sizeof(nonAirCount));
+        
+        for (int i = 0; i < nonAirCount; ++i) {
+            Block block;
+            file.read(reinterpret_cast<char*>(&block), sizeof(Block));
+            glm::ivec3 localPos = glm::ivec3(block.position);
+            setBlockAt(localPos, block.type);
+        }
     }
+    
     file.close();
 }
