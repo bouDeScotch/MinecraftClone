@@ -26,19 +26,45 @@ Player player;
 Camera camera;
 Renderer renderer;
 void processInput(GLFWwindow *window, float deltaTime, World& world) {
-    float speed = 100.0f * deltaTime;
-    if(glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        player.move(camera.front * speed);
-    if(glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        player.move(-camera.front * speed);
-    if(glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        player.move(glm::normalize(glm::cross(camera.front, camera.up)) * -speed);
-    if(glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        player.move(glm::normalize(glm::cross(camera.front, camera.up)) * speed);
-    if(glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
-        player.move(camera.up * speed);
-    if(glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
-        player.move(-camera.up * speed);
+    glm::vec3 movementFront = glm::vec3(camera.front.x, 0.0f, camera.front.z);
+    movementFront = glm::normalize(movementFront);
+
+    glm::vec3 movementRight = glm::vec3(camera.right.x, 0.0f, camera.right.z);
+    movementRight = glm::normalize(movementRight);
+
+    player.velocity = glm::vec3(0.0f, player.velocity.y, 0.0f);
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+        player.velocity += movementFront * player.maxSpeed;
+    } 
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+        player.velocity -= movementFront * player.maxSpeed;
+    }
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+        player.velocity -= movementRight * player.maxSpeed;
+    }
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+        player.velocity += movementRight * player.maxSpeed;
+    }
+    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+        // Check if on ground (simple check)
+        float worldY = world.getActualHeightAt(player.position.x, player.position.z);
+        if (player.position.y <= worldY + 1.01f) { // small epsilon
+            player.jump(deltaTime);
+        }
+    }
+    if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
+        // Check if not on ground
+        float worldY = world.getActualHeightAt(player.position.x, player.position.z);
+        if (player.position.y > worldY + 1.01f) { // small epsilon
+            player.velocity.y = -20.0f;
+        }
+    }
+    player.velocity += Player::GRAVITY * deltaTime;
+    player.clampVelocity();
+    player.updatePosition(deltaTime);
+
+    // Print velocity magnitude for debugging
+    std::cout << "Velocity magnitude: " << glm::length(player.velocity) << std::endl;
     // Detect right click and place a block
     static bool wasPressed = false;
     if(glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {

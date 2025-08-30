@@ -4,10 +4,6 @@ Player::Player() {
     position = glm::vec3(0.0f, 1.0f, 3.0f);
 }
 
-void Player::move(const glm::vec3& delta) {
-    position += delta;
-}
-
 
 
 void Player::placeBlock(World& world, BlockType type, Camera& camera) {
@@ -75,3 +71,22 @@ void Player::placeBlock(World& world, BlockType type, Camera& camera) {
 }
 
 
+void Player::clampVelocity() {
+    float horizontalSpeed = glm::length(glm::vec3(velocity.x, 0.0f, velocity.z));
+    if (horizontalSpeed > maxSpeed) {
+        glm::vec3 horizontalDir = glm::normalize(glm::vec3(velocity.x, 0.0f, velocity.z));
+        velocity.x = horizontalDir.x * maxSpeed;
+        velocity.z = horizontalDir.z * maxSpeed;
+    }
+    if (std::abs(velocity.y) > maxVerticalSpeed) {
+        velocity.y = (velocity.y > 0 ? 1 : -1) * maxVerticalSpeed;
+    }
+}
+
+void Player::updatePosition(float deltaTime) {
+    position += velocity * deltaTime;
+}
+
+void Player::jump(float deltaTime) {
+    velocity.y = sqrt(2.0f * jumpHeight * -GRAVITY.y) + GRAVITY.y * deltaTime;
+}

@@ -148,6 +148,31 @@ public:
         int elevation = static_cast<int>(perlin.octave2D_01(worldX * 0.01f, worldZ * 0.01f, 6) * 80.0f);
         return elevation;
     }
+
+    int getActualHeightAt(int worldX, int worldZ) {
+        glm::ivec3 chunkPos = {
+            divFloor(worldX, Chunk::CHUNK_SIZE.x),
+            0,
+            divFloor(worldZ, Chunk::CHUNK_SIZE.z)
+        };
+        Chunk* chunk = getChunkAt(chunkPos);
+        if (!chunk) return -1; // chunk non généré
+
+        glm::ivec3 localPos = {
+            worldX - chunkPos.x * Chunk::CHUNK_SIZE.x,
+            Chunk::CHUNK_SIZE.y - 1, // start from top
+            worldZ - chunkPos.z * Chunk::CHUNK_SIZE.z
+        };
+
+        for (int y = Chunk::CHUNK_SIZE.y - 1; y >= 0; y--) {
+            localPos.y = y;
+            Block block = chunk->getBlockAt(localPos);
+            if (block.type != AIR) {
+                return y + chunkPos.y * Chunk::CHUNK_SIZE.y;
+            }
+        }
+        return -1; // no solid block found
+    }
     
     bool isBlockSolid(const glm::ivec3& worldPos) {
         // Calcul de la position du chunk correspondant

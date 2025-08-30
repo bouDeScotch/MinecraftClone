@@ -4,14 +4,24 @@
 #include "World.h"
 #include "Camera.h"
 
-class Player {
+class Player { 
 public:
+
+    static constexpr glm::vec3 GRAVITY = glm::vec3(0.0f, -9.81f, 0.0f);
+    static constexpr float LOW_VELOCITY_THRESHOLD = 0.5f;
+
+    float maxSpeed = 5.0f;
+    float maxVerticalSpeed = 50.0f;
+    float jumpHeight = 1.3f;
     glm::vec3 position;
     glm::vec3 direction;
+    glm::vec3 velocity{0.0f};
 
     Player();
 
-    void move(const glm::vec3& delta);
-
     void placeBlock(class World& world, BlockType type, Camera& camera);
+    void clampVelocity();
+
+    void jump(float deltaTime);
+    void updatePosition(float deltaTime);
 };
