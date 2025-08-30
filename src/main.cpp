@@ -3,6 +3,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
+#include <memory>
 #include <queue>
 #include <mutex>
 #include <thread>
@@ -158,21 +159,23 @@ glm::vec3 getLightDir() {
 int main() {
     World world;
     
-    std::queue<Chunk*> chunksToUpload;
+    std::queue<std::shared_ptr<Chunk>> chunksToUpload;
     std::mutex chunksMutex;
     std::atomic<bool> generatorRunning{true};
 
     std::thread chunkGenerator([&world, &chunksToUpload, &chunksMutex, &generatorRunning](){
         while(generatorRunning) {
-            for(auto& [pos, chunk] : world.chunkMap) {
-                if(!chunk.meshGenerated) {
-                    chunk.generateMesh();
+            
+            for(auto& [pos, chunkPtr] : world.chunkMap) {
+                if(!chunkPtr->meshGenerated) {
+                    chunkPtr->generateMesh();
                     {
                         std::lock_guard<std::mutex> lock(chunksMutex);
-                        chunksToUpload.push(&chunk);
+                        chunksToUpload.push(chunkPtr); // raw pointer pour queue
                     }
                 }
             }
+
             std::this_thread::sleep_for(std::chrono::milliseconds(4));
         }
     });
@@ -240,7 +243,6 @@ int main() {
         };
 
         auto chunksToDraw = world.getAllChunksToDraw(playerChunkPos, 20); 
-        world.unloadFarChunks(playerChunkPos, 25);
 
         // Generate chunk not generated yet
         for(const auto& pos : chunksToDraw) {
@@ -253,11 +255,13 @@ int main() {
         {
         std::lock_guard<std::mutex> lock(chunksMutex);
             while(!chunksToUpload.empty()) {
-                Chunk* c = chunksToUpload.front();
+                std::shared_ptr<Chunk> c = chunksToUpload.front();  // conserve le shared_ptr
                 chunksToUpload.pop();
                 c->uploadMeshToGPU();
             }
         }
+
+        world.unloadFarChunks(playerChunkPos, 25);
 
         // Draw chunks
         for(const auto& pos : chunksToDraw) {
@@ -267,7 +271,7 @@ int main() {
             }
         }
 
-        renderer.drawSun(sunShader, view, projection, getLightDir());
+        renderer.drawSun(sunShader, view, projection, getLightDir(), player);
         crosshairShader.use();
         crosshairShader.setVec2("u_ScreenSize", glm::vec2(SCR_WIDTH, SCR_HEIGHT));
         renderer.drawCrosshair(crosshairShader);

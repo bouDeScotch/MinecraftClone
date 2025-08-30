@@ -78,9 +78,9 @@ struct SunVertex {
     glm::vec2 uv;
 };
 
-void Renderer::drawSun(Shader& shader, const glm::mat4& view, const glm::mat4& projection, glm::vec3 lightDir) {
+void Renderer::drawSun(Shader& shader, const glm::mat4& view, const glm::mat4& projection, glm::vec3 lightDir, const Player& player) {
     glm::vec3 lightDirNorm = glm::normalize(lightDir);
-    glm::vec3 sunPos = lightDirNorm * 1000.0f;
+    glm::vec3 sunPos = lightDirNorm * 1000.0f + player.position; // position loin du joueur
 
     static const float size = 100.0f;
 

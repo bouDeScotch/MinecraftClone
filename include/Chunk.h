@@ -3,6 +3,7 @@
 #include <vector>
 #include <glad/glad.h>
 #include "PerlinNoise.hpp"
+#include <atomic>
 
 enum BlockType {
     AIR,
@@ -55,6 +56,8 @@ class Chunk {
 public:
     std::vector<Block> blocks;
     bool meshGenerated = false;
+    bool uploadingToGPU = false;
+    std::atomic<bool> busy{false};
 
     static const glm::ivec3 CHUNK_SIZE;
     glm::ivec3 chunkPos;
@@ -71,6 +74,13 @@ public:
             glDeleteBuffers(1, &gl.vbo);
             glDeleteBuffers(1, &gl.ebo);
         }
+
+        blocks.clear();
+        vertices.clear();
+        indices.clear();
+        meshPositions.clear();
+        meshFaces.clear();
+        meshTypes.clear();
     }
 
     void generate(siv::PerlinNoise& perlin);
@@ -82,7 +92,7 @@ public:
 
     void saveToFile(const std::string& filename);
     void loadFromFile(const std::string& filename);
-    bool isInFile(const std::string& filename);
+    static bool isInFile(const std::string& filename);
 
 private:
     std::vector<Vertex>   vertices;

@@ -24,7 +24,7 @@ public:
                        const glm::mat4& view, const glm::mat4& projection,
                        const glm::vec3 &lightDir = glm::vec3(0.5f));
 
-    void drawSun(Shader& shader, const glm::mat4& view, const glm::mat4& projection, glm::vec3 lightDir);
+    void drawSun(Shader& shader, const glm::mat4& view, const glm::mat4& projection, glm::vec3 lightDir, const Player& player);
     void drawCrosshair(Shader& shader);
 private:
     unsigned int cubeVAO, cubeVBO;

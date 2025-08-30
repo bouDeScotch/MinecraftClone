@@ -35,6 +35,7 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(glm)
 
+
 add_executable(app
     src/main.cpp
     src/Player.cpp

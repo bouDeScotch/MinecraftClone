@@ -20,6 +20,15 @@ static std::map<BlockType, BlockTexture> blockTextures = {
     {SNOW, {11, 11, 11, 11, 11, 11}},
 };
 
+enum Biomes {
+    PLAINS,
+    DESERT,
+    FOREST,
+    MOUNTAINS,
+    SNOWY,
+    SWAMP
+};
+
 const glm::ivec3 Chunk::CHUNK_SIZE = glm::ivec3(16, 128, 16);
 
 
@@ -36,48 +45,78 @@ void Chunk::generate(siv::PerlinNoise& perlin) {
             int worldZ = z + chunkPos.z * Chunk::CHUNK_SIZE.z;
             
             // Terrain params
-            float elevation = perlin.octave2D_01(worldX * 0.01f, worldZ * 0.01f, 6) * 80.0f;
+            int elevation = perlin.octave2D_01(worldX * 0.01f, worldZ * 0.01f, 6) * 80.0f;
 
             float temperature = perlin.octave2D_01(worldX * 0.002f, worldZ * 0.002f, 3);  
             float humidity    = perlin.octave2D_01(worldX * 0.002f + 100, worldZ * 0.002f + 100, 3);
+            Biomes biome;
+            if (temperature < 0.3f && humidity < 0.3f)
+                biome = SNOWY;
+            else if (temperature > 0.7f && humidity < 0.3f)
+                biome = DESERT;
+            else if (temperature < 0.3f && humidity > 0.7f)
+                biome = FOREST;
+            else if (temperature < 0.3f)
+                biome = SNOWY;
+            else if (humidity > 0.7f)
+                biome = SWAMP;
+            else
+                biome = PLAINS;
             for (int y = 0; y < Chunk::CHUNK_SIZE.y; y++) {
-                int worldY = y + chunkPos.y * Chunk::CHUNK_SIZE.y;
-
-                BlockType type = AIR;
-                if (worldY < elevation) {
-                    if (worldY < elevation - 5) {
-                        type = STONE;
-                    } else if (worldY < elevation - 1) {
-                        type = DIRT;
-                    } else {
-                        if (temperature < 0.3f) {
-                            type = SNOW;
-                        } else if (humidity > 0.3f) {
-                            type = GRASS;
-                        } else {
-                            type = SAND;
-                        }
+                if (y > elevation) continue;
+                // Place top block based on biome
+                if (y == elevation) {
+                    switch (biome) {
+                        case PLAINS:
+                            setBlockAt({x, y, z}, GRASS);
+                            break;
+                        case DESERT:
+                            setBlockAt({x, y, z}, SAND);
+                            break;
+                        case FOREST:
+                            setBlockAt({x, y, z}, GRASS);
+                            break;
+                        case MOUNTAINS:
+                            setBlockAt({x, y, z}, STONE);
+                            break;
+                        case SNOWY:
+                            setBlockAt({x, y, z}, SNOW);
+                            break;
+                        case SWAMP:
+                            setBlockAt({x, y, z}, GRASS);
+                            break;
+                        default:
+                            setBlockAt({x, y, z}, GRASS);
+                            break;
                     }
-                } else if (worldY == static_cast<int>(elevation)) {
-                    // Surface block
-                    if (temperature < 0.3f) {
-                        type = SNOW;
-                    } else if (humidity > 0.3f) {
-                        type = GRASS;
-                    } else {
-                        type = SAND;
-                    }
-                } else if (worldY == static_cast<int>(elevation) + 1 && type == GRASS) {
-                    if (0.8f < humidity && humidity < 0.9f && temperature > 0.3f) {
-                        type = PUMPKIN;
-                        std::cout << "Pumpkin at " << worldX << ", " << worldY << ", " << worldZ << std::endl;
-                    }                    
                 }
-
-                setBlockAt(glm::ivec3(x, y, z), type);
+                // Place sub-surface blocks
+                else if (y >= elevation - 4) {
+                    switch (biome) {
+                        case PLAINS:
+                        case FOREST:
+                        case SWAMP:
+                            setBlockAt({x, y, z}, DIRT);
+                            break;
+                        case DESERT:
+                            setBlockAt({x, y, z}, SAND);
+                            break;
+                        case MOUNTAINS:
+                        case SNOWY:
+                            setBlockAt({x, y, z}, STONE);
+                            break;
+                        default:
+                            setBlockAt({x, y, z}, DIRT);
+                            break;
+                    }
+                }
+                // Deep underground blocks
+                else {
+                    setBlockAt({x, y, z}, STONE);
+                }
             }
         }
-}
+    }
 }
 
 
@@ -106,6 +145,7 @@ Block& Chunk::getBlockAt(const glm::ivec3& localPos) {
 
 
 void Chunk::generateMesh() {
+    busy = true;
     vertices.clear();
     indices.clear();
 
@@ -115,6 +155,10 @@ void Chunk::generateMesh() {
     meshPositions.clear();
     meshFaces.clear();
     meshTypes.clear();
+    meshPositions.reserve(blocks.size() * 6); // max 6 faces per block
+    meshFaces.reserve(blocks.size() * 6);
+    meshTypes.reserve(blocks.size() * 6);
+
 
     //for (const auto& block : blocks) {
     for (int x = 0; x < CHUNK_SIZE.x; ++x) {
@@ -168,7 +212,9 @@ void Chunk::generateMesh() {
     }
 
     addFaces(meshPositions, meshFaces, meshTypes);
-    meshGenerated = true;    
+    meshGenerated = true;
+    uploadingToGPU = true;
+    busy = false;
 }
 
 void Chunk::addFaces(const std::vector<glm::ivec3>& meshPositions, 

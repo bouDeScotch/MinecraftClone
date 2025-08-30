@@ -1,11 +1,13 @@
 #pragma once
 #include "Chunk.h"
+#include <memory>
 #include <vector>
 #include <iostream>
 #include <glm/gtx/string_cast.hpp>
 #include <unordered_map>
 #include "PerlinNoise.hpp"
 #include <map>
+#include <time.h>
 
 struct Structure {
     std::vector<BlockType> types;
@@ -17,8 +19,8 @@ class World {
 public:
 
     // Move seed here
-    static const siv::PerlinNoise::seed_type seed = 765;
-    siv::PerlinNoise perlin = siv::PerlinNoise(seed);
+    siv::PerlinNoise::seed_type seed;
+    siv::PerlinNoise perlin;
 
     std::string chunkDir;
 
@@ -73,7 +75,7 @@ public:
         }
     };
 
-    std::unordered_map<glm::ivec3, Chunk, IVec3Hash> chunkMap;    
+    std::unordered_map<glm::ivec3, std::shared_ptr<Chunk>, IVec3Hash> chunkMap;    
     World() {
         // Create directory for chunks if it doesn't exist
         std::string dir = "../chunks/" + std::to_string(seed);
@@ -82,6 +84,8 @@ public:
         }
 
         chunkDir = "../chunks/" + std::to_string(seed) + "/";
+        seed = static_cast<siv::PerlinNoise::seed_type>(time(NULL));
+        perlin = siv::PerlinNoise(seed);
     }
 
     std::string getFilenameForChunk(const glm::ivec3& pos) {
@@ -91,23 +95,29 @@ public:
         return chunkDir + "chunk_" + std::to_string(index);
     }
 
+    
     void createChunkAt(const glm::ivec3& pos) {
         if (chunkMap.find(pos) == chunkMap.end()) {
-            Chunk chunk(pos);
-            // ivec3 is 3 integers, create an index by bit shifting
             auto filename = getFilenameForChunk(pos);
-            if (chunk.isInFile(filename)) {
-                chunk.loadFromFile(filename);
-                chunkMap.emplace(pos, chunk);
+
+            std::shared_ptr<Chunk> chunkPtr;
+
+            // Si le chunk existe dans un fichier, on le charge
+            if (Chunk::isInFile(filename)) {
+                chunkPtr = std::make_shared<Chunk>(pos); // construit directement
+                chunkPtr->loadFromFile(filename);
                 std::cout << "Loaded chunk from file: " << filename << std::endl;
-                return;
+            } else {
+                chunkPtr = std::make_shared<Chunk>(pos); // construit directement
+                chunkPtr->generate(perlin);
+                chunkPtr->saveToFile(filename);
+                std::cout << "Generated and saved chunk at " << glm::to_string(pos);
             }
-            chunk.generate(perlin);
-            chunkMap.emplace(pos, chunk);
-            chunk.saveToFile(filename);
-            std::cout << "Generated and saved chunk at " << glm::to_string(pos);
+
+            chunkMap[pos] = chunkPtr;
         }
     }
+
 
     void placeStructure(const std::string& name, const glm::ivec3& basePos) {
         auto it = structures.find(name);
@@ -234,7 +244,8 @@ public:
 
     Chunk* getChunkAt(const glm::ivec3& pos) {
         auto it = chunkMap.find(pos);
-        if (it != chunkMap.end()) return &it->second;
+        if (it != chunkMap.end())
+            return it->second.get();  // shared_ptr -> raw pointer
         return nullptr;
     }
 
@@ -314,9 +325,15 @@ public:
             auto it = chunkMap.find(pos);
             if (it != chunkMap.end()) {
                 // Save chunk to file before removing
+                if (it->second->busy) {
+                    std::cout << "Chunk at " << glm::to_string(pos) << " is busy, skipping unload.\n";
+                    continue; // skip if busy
+                }
                 std::string filename = getFilenameForChunk(pos);
-                it->second.saveToFile(filename);
-                chunkMap.erase(it);
+                auto chunk = it->second;    // shared_ptr garde vivant
+                chunkMap.erase(it);          // supprime map, chunk reste alive si thread l’utilise
+                chunk->saveToFile(filename);
+
                 std::cout << "Unloaded chunk at " << glm::to_string(pos) << std::endl;
             }
         }
