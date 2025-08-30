@@ -3,6 +3,7 @@
 #include <iostream>
 #include <map>
 #include <time.h>
+#include <fstream>
 
 // Block texture is
 // {front, back, left, right, top, bottom}
@@ -74,7 +75,7 @@ void Chunk::generate(siv::PerlinNoise& perlin) {
                 setBlockAt(glm::ivec3(x, y, z), type);
             }
         }
-    }
+}
 }
 
 
@@ -296,4 +297,43 @@ void Chunk::uploadMeshToGPU()
     glBindVertexArray(0);
 
     gl.indexCount = indices.size();
+}
+
+void Chunk::saveToFile(const std::string& filename) {
+    // Create block data file
+    std::string filenameBlocks = filename + ".blk";
+    std::ofstream file(filenameBlocks, std::ios::binary);
+    if (!file) {
+        std::cerr << "Failed to open file for writing: " << filename << std::endl;
+        return;
+    }
+
+    // Write chunk position
+    file.write(reinterpret_cast<const char*>(&chunkPos), sizeof(chunkPos));
+    // Write block data
+    file.write(reinterpret_cast<const char*>(blocks.data()), blocks.size() * sizeof(Block));
+    file.close();
+}
+
+bool Chunk::isInFile(const std::string& filename) {
+    std::string filenameBlocks = filename + ".blk";
+    std::ifstream file(filenameBlocks, std::ios::binary);
+    return file.good();
+}
+
+void Chunk::loadFromFile(const std::string& filename) {
+    std::string filenameBlocks = filename + ".blk";
+    std::ifstream file(filenameBlocks, std::ios::binary);
+    if (!file) {
+        std::cerr << "Failed to open file for reading: " << filenameBlocks << std::endl;
+        return;
+    }
+
+    // Read chunk position
+    file.read(reinterpret_cast<char*>(&chunkPos), sizeof(chunkPos));
+    // Read block data
+    file.read(reinterpret_cast<char*>(blocks.data()), blocks.size() * sizeof(Block));
+    file.close();
+
+    meshGenerated = false; // force regeneration du mesh
 }

@@ -20,6 +20,8 @@ public:
     static const siv::PerlinNoise::seed_type seed = 765;
     siv::PerlinNoise perlin = siv::PerlinNoise(seed);
 
+    std::string chunkDir;
+
     std::map<std::string, Structure> structures = { 
         
         {"tree",
@@ -78,13 +80,32 @@ public:
         if (system(("mkdir -p " + dir).c_str()) != 0) {
             std::cerr << "Failed to create directory: " << dir << std::endl;
         }
+
+        chunkDir = "../chunks/" + std::to_string(seed) + "/";
+    }
+
+    std::string getFilenameForChunk(const glm::ivec3& pos) {
+        long long index = (static_cast<long long>(pos.x) & 0xFFFFF) << 40 |
+                         (static_cast<long long>(pos.y) & 0xFFFFF) << 20 |
+                         (static_cast<long long>(pos.z) & 0xFFFFF);
+        return chunkDir + "chunk_" + std::to_string(index);
     }
 
     void createChunkAt(const glm::ivec3& pos) {
         if (chunkMap.find(pos) == chunkMap.end()) {
             Chunk chunk(pos);
+            // ivec3 is 3 integers, create an index by bit shifting
+            auto filename = getFilenameForChunk(pos);
+            if (chunk.isInFile(filename)) {
+                chunk.loadFromFile(filename);
+                chunkMap.emplace(pos, chunk);
+                std::cout << "Loaded chunk from file: " << filename << std::endl;
+                return;
+            }
             chunk.generate(perlin);
             chunkMap.emplace(pos, chunk);
+            chunk.saveToFile(filename);
+            std::cout << "Generated and saved chunk at " << glm::to_string(pos);
         }
     }
 
@@ -219,11 +240,7 @@ public:
 
     
     void placeBlock(Block block, bool byUser = true) {
-        glm::ivec3 chunkPos = {
-            static_cast<int>(std::floor(block.position.x / Chunk::CHUNK_SIZE.x)),
-            static_cast<int>(std::floor(block.position.y / Chunk::CHUNK_SIZE.y)),
-            static_cast<int>(std::floor(block.position.z / Chunk::CHUNK_SIZE.z))
-        };
+        glm::ivec3 chunkPos = glm::floor(glm::vec3(block.position) / glm::vec3(Chunk::CHUNK_SIZE));
 
         Chunk* chunk = getChunkAt(chunkPos);
         if (!chunk) {
@@ -232,7 +249,7 @@ public:
             if (!chunk) return;             // sécurité absolue
         }
 
-        glm::ivec3 localPos = static_cast<glm::ivec3>(glm::floor(block.position)) - chunkPos * Chunk::CHUNK_SIZE;
+        glm::ivec3 localPos = block.position - chunkPos * Chunk::CHUNK_SIZE;
 
         if (localPos.x < 0 || localPos.x >= Chunk::CHUNK_SIZE.x ||
             localPos.y < 0 || localPos.y >= Chunk::CHUNK_SIZE.y ||
@@ -283,6 +300,26 @@ public:
             }
         }
         return chunksToDraw;
+    }
+
+    void unloadFarChunks(glm::ivec3 playerChunkPos, int viewDistance) {
+        std::vector<glm::ivec3> chunksToRemove;
+        for (const auto& pair : chunkMap) {
+            const glm::ivec3& chunkPos = pair.first;
+            if (glm::length(glm::vec2(chunkPos.x - playerChunkPos.x, chunkPos.z - playerChunkPos.z)) > viewDistance + 2) {
+                chunksToRemove.push_back(chunkPos);
+            }
+        }
+        for (const auto& pos : chunksToRemove) {
+            auto it = chunkMap.find(pos);
+            if (it != chunkMap.end()) {
+                // Save chunk to file before removing
+                std::string filename = getFilenameForChunk(pos);
+                it->second.saveToFile(filename);
+                chunkMap.erase(it);
+                std::cout << "Unloaded chunk at " << glm::to_string(pos) << std::endl;
+            }
+        }
     }
 
     void removeBlock(const glm::ivec3& worldPos) {

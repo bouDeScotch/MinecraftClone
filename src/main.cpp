@@ -240,6 +240,7 @@ int main() {
         };
 
         auto chunksToDraw = world.getAllChunksToDraw(playerChunkPos, 20); 
+        world.unloadFarChunks(playerChunkPos, 25);
 
         // Generate chunk not generated yet
         for(const auto& pos : chunksToDraw) {

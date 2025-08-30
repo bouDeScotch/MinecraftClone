@@ -40,7 +40,7 @@ struct BlockTexture {
 };
 
 struct Block {
-    glm::vec3 position;
+    glm::ivec3 position;
     BlockType type;
 };
 
@@ -61,7 +61,9 @@ public:
 
     ChunkMeshGL gl;
 
-   Chunk(const glm::ivec3& pos) : chunkPos(pos) {}
+   Chunk(const glm::ivec3& pos) : chunkPos(pos) {
+         blocks.resize(CHUNK_SIZE.x * CHUNK_SIZE.y * CHUNK_SIZE.z, {{0,0,0}, AIR});
+   }
 
     void generate(siv::PerlinNoise& perlin);
 
@@ -69,6 +71,10 @@ public:
     Block& getBlockAt(const glm::ivec3& localPos);
     void setBlockAt(const glm::ivec3& localPos, BlockType type);
     void uploadMeshToGPU();
+
+    void saveToFile(const std::string& filename);
+    void loadFromFile(const std::string& filename);
+    bool isInFile(const std::string& filename);
 
 private:
     std::vector<Vertex>   vertices;
