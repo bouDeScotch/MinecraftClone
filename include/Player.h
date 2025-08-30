@@ -10,7 +10,7 @@ public:
     static constexpr glm::vec3 GRAVITY = glm::vec3(0.0f, -9.81f, 0.0f);
     static constexpr float LOW_VELOCITY_THRESHOLD = 0.5f;
 
-    float maxSpeed = 10.0f;
+    float maxSpeed = 100.0f;
     float maxVerticalSpeed = 50.0f;
     float jumpHeight = 1.3f;
     glm::vec3 position;

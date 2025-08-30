@@ -59,7 +59,7 @@ void processInput(GLFWwindow *window, float deltaTime, World& world) {
             player.velocity.y = -player.maxVerticalSpeed;
         }
     }
-    player.velocity += Player::GRAVITY * deltaTime;
+    //player.velocity += Player::GRAVITY * deltaTime;
     player.clampVelocity();
     player.updatePosition(deltaTime);
     player.collideWithWorld(world);

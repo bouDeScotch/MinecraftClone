@@ -61,9 +61,17 @@ public:
 
     ChunkMeshGL gl;
 
-   Chunk(const glm::ivec3& pos) : chunkPos(pos) {
-         blocks.resize(CHUNK_SIZE.x * CHUNK_SIZE.y * CHUNK_SIZE.z, {{0,0,0}, AIR});
-   }
+    Chunk(const glm::ivec3& pos) : chunkPos(pos) {
+        blocks.resize(CHUNK_SIZE.x * CHUNK_SIZE.y * CHUNK_SIZE.z, {{0,0,0}, AIR});
+    }
+
+    ~Chunk() {
+        if (gl.vao != 0) {
+            glDeleteVertexArrays(1, &gl.vao);
+            glDeleteBuffers(1, &gl.vbo);
+            glDeleteBuffers(1, &gl.ebo);
+        }
+    }
 
     void generate(siv::PerlinNoise& perlin);
 
