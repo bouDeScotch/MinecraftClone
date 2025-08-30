@@ -47,14 +47,6 @@ add_executable(app
 target_compile_definitions(app PRIVATE GLM_ENABLE_EXPERIMENTAL)
 target_link_libraries(app PRIVATE glfw glad glm)
 
-# Add comprehensive test executable
-add_executable(test_comprehensive
-    test_comprehensive.cpp
-    src/Chunk.cpp
-)
-target_compile_definitions(test_comprehensive PRIVATE GLM_ENABLE_EXPERIMENTAL)
-target_link_libraries(test_comprehensive PRIVATE glm glad)
-
 if (WIN32)
     target_link_libraries(app PRIVATE opengl32 gdi32)
 elseif (UNIX AND NOT APPLE)

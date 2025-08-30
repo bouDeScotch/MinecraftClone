@@ -3,3 +3,12 @@
 /dist/
 /build-windows/
 /chunks/
+
+# Test files
+test_chunk_size.cpp
+test_comprehensive.cpp
+test_chunk_size
+test_comprehensive
+
+# Chunk files
+*.blk
