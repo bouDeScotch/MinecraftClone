@@ -311,8 +311,16 @@ void Chunk::saveToFile(const std::string& filename) {
     // Write chunk position
     file.write(reinterpret_cast<const char*>(&chunkPos), sizeof(chunkPos));
     // Write block data
-    file.write(reinterpret_cast<const char*>(blocks.data()), blocks.size() * sizeof(Block));
-    file.close();
+    // Instead of writing every block, we will optimize by writing only non-AIR blocks
+    int nonAirCount = 0;
+    for (const auto& block : blocks) {
+        if (block.type != AIR) nonAirCount++;
+    }
+    file.write(reinterpret_cast<const char*>(&nonAirCount), sizeof(nonAirCount));
+    for (const auto& block : blocks) {
+        if (block.type == AIR) continue;
+        file.write(reinterpret_cast<const char*>(&block), sizeof(Block));
+    }
 }
 
 bool Chunk::isInFile(const std::string& filename) {
@@ -331,9 +339,15 @@ void Chunk::loadFromFile(const std::string& filename) {
 
     // Read chunk position
     file.read(reinterpret_cast<char*>(&chunkPos), sizeof(chunkPos));
-    // Read block data
-    file.read(reinterpret_cast<char*>(blocks.data()), blocks.size() * sizeof(Block));
+    int nonAirCount = 0;
+    file.read(reinterpret_cast<char*>(&nonAirCount), sizeof(nonAirCount));
+    blocks.clear();
+    blocks.resize(CHUNK_SIZE.x * CHUNK_SIZE.y * CHUNK_SIZE.z, {{0,0,0}, AIR});
+    for (int i = 0; i < nonAirCount; ++i) {
+        Block block;
+        file.read(reinterpret_cast<char*>(&block), sizeof(Block));
+        glm::ivec3 localPos = glm::ivec3(block.position);
+        setBlockAt(localPos, block.type);
+    }
     file.close();
-
-    meshGenerated = false; // force regeneration du mesh
 }
