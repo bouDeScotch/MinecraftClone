@@ -120,8 +120,12 @@ public:
                 int worldZ = z + chunkPos.z * Chunk::CHUNK_SIZE.z;
                 float treeChance = perlin.octave2D_01(worldX * 0.1f, worldZ * 0.1f, 4);
                 if (treeChance > 0.8f) {
+                    // Check ground block type
                     int height = getHeightAt(worldX, worldZ);
                     glm::ivec3 treeBasePos = {worldX, height, worldZ};
+                    if (!isBlockSolid(treeBasePos)) continue;
+                    Block belowBlock = getBlockAt(treeBasePos); // Structure is relative to ground so no need to subtract 1
+                    if (belowBlock.type != GRASS && belowBlock.type != DIRT) continue;
                     placeStructure("tree", treeBasePos);
                     z += 3; // éviter de placer des arbres trop proches
                     x += 3;
@@ -189,7 +193,7 @@ public:
     }
 
     
-    void placeBlock(Block block) {
+    void placeBlock(Block block, bool byUser = true) {
         glm::ivec3 chunkPos = {
             static_cast<int>(std::floor(block.position.x / Chunk::CHUNK_SIZE.x)),
             static_cast<int>(std::floor(block.position.y / Chunk::CHUNK_SIZE.y)),
@@ -213,7 +217,32 @@ public:
         }
 
         chunk->setBlockAt(localPos, block.type);
-        chunk->meshGenerated = false; // forcer la régénération du mesh
+        chunk->meshGenerated = false; // for regeneration
+    }
+
+    Block getBlockAt(const glm::ivec3& worldPos) {
+        glm::ivec3 chunkPos = {
+            divFloor(worldPos.x, Chunk::CHUNK_SIZE.x),
+            divFloor(worldPos.y, Chunk::CHUNK_SIZE.y),
+            divFloor(worldPos.z, Chunk::CHUNK_SIZE.z)
+        };
+
+        Chunk* chunk = getChunkAt(chunkPos);
+        if (!chunk) {
+            static Block airBlock = {{0,0,0}, AIR};
+            return airBlock; // Return an AIR block if chunk doesn't exist
+        }
+
+        glm::ivec3 localPos = worldPos - chunkPos * Chunk::CHUNK_SIZE;
+
+        if (localPos.x < 0 || localPos.x >= Chunk::CHUNK_SIZE.x ||
+            localPos.y < 0 || localPos.y >= Chunk::CHUNK_SIZE.y ||
+            localPos.z < 0 || localPos.z >= Chunk::CHUNK_SIZE.z) {
+            static Block airBlock = {{0,0,0}, AIR};
+            return airBlock; // Return an AIR block if out of bounds
+        }
+
+        return chunk->getBlockAt(localPos);
     }
 
 
@@ -223,6 +252,8 @@ public:
             for (int z = -viewDistance; z <= viewDistance; z++) {
                 glm::ivec3 chunkPos = playerChunkPos + glm::ivec3(x, 0, z);
                 chunkPos.y = 0; // For now, only ground level
+                // Check for distance to avoid square shape
+                if (glm::length(glm::vec2(x, z)) > viewDistance) continue;
                 chunksToDraw.push_back(chunkPos);
             }
         }

@@ -46,6 +46,12 @@ void Player::placeBlock(World& world, BlockType type, Camera& camera) {
             block.position = lastEmpty;
             block.type = type;
             world.placeBlock(block);
+            // Generate mesh for affected chunk
+            glm::ivec3 chunkPos = {
+                static_cast<int>(std::floor(block.position.x / Chunk::CHUNK_SIZE.x)),
+                static_cast<int>(std::floor(block.position.y / Chunk::CHUNK_SIZE.y)),
+                static_cast<int>(std::floor(block.position.z / Chunk::CHUNK_SIZE.z))
+            };
             return;
         }
 

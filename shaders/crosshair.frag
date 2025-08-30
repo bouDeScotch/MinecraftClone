@@ -24,6 +24,6 @@ void main()
     if(abs(offset.x) < halfSize && abs(offset.y) < halfSize) {
         FragColor = vec4(color, 1.0);
     } else {
-        FragColor = vec4(0.0, 0.0, 0.0, 0.8); // transparent
+        FragColor = vec4(0.0, 0.0, 0.0, 0.0); // transparent
     }
 }
