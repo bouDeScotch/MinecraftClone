@@ -4,6 +4,7 @@
 #include <map>
 #include <time.h>
 #include <fstream>
+#include <cstdint>
 
 // Block texture is
 // {front, back, left, right, top, bottom}
@@ -310,8 +311,31 @@ void Chunk::saveToFile(const std::string& filename) {
 
     // Write chunk position
     file.write(reinterpret_cast<const char*>(&chunkPos), sizeof(chunkPos));
-    // Write block data
-    file.write(reinterpret_cast<const char*>(blocks.data()), blocks.size() * sizeof(Block));
+    
+    // Count non-AIR blocks and collect them
+    std::vector<std::pair<glm::ivec3, BlockType>> nonAirBlocks;
+    for (int x = 0; x < CHUNK_SIZE.x; ++x) {
+        for (int y = 0; y < CHUNK_SIZE.y; ++y) {
+            for (int z = 0; z < CHUNK_SIZE.z; ++z) {
+                glm::ivec3 localPos(x, y, z);
+                Block& block = getBlockAt(localPos);
+                if (block.type != AIR) {
+                    nonAirBlocks.push_back({localPos, block.type});
+                }
+            }
+        }
+    }
+    
+    // Write number of non-AIR blocks
+    uint32_t numBlocks = static_cast<uint32_t>(nonAirBlocks.size());
+    file.write(reinterpret_cast<const char*>(&numBlocks), sizeof(numBlocks));
+    
+    // Write each non-AIR block (position + type)
+    for (const auto& blockData : nonAirBlocks) {
+        file.write(reinterpret_cast<const char*>(&blockData.first), sizeof(glm::ivec3));
+        file.write(reinterpret_cast<const char*>(&blockData.second), sizeof(BlockType));
+    }
+    
     file.close();
 }
 
@@ -331,8 +355,27 @@ void Chunk::loadFromFile(const std::string& filename) {
 
     // Read chunk position
     file.read(reinterpret_cast<char*>(&chunkPos), sizeof(chunkPos));
-    // Read block data
-    file.read(reinterpret_cast<char*>(blocks.data()), blocks.size() * sizeof(Block));
+    
+    // Initialize all blocks to AIR
+    blocks.clear();
+    blocks.resize(CHUNK_SIZE.x * CHUNK_SIZE.y * CHUNK_SIZE.z, {{0,0,0}, AIR});
+    
+    // Read number of non-AIR blocks
+    uint32_t numBlocks;
+    file.read(reinterpret_cast<char*>(&numBlocks), sizeof(numBlocks));
+    
+    // Read each non-AIR block and set it in the blocks array
+    for (uint32_t i = 0; i < numBlocks; ++i) {
+        glm::ivec3 localPos;
+        BlockType blockType;
+        
+        file.read(reinterpret_cast<char*>(&localPos), sizeof(glm::ivec3));
+        file.read(reinterpret_cast<char*>(&blockType), sizeof(BlockType));
+        
+        // Set the block at the specified position
+        setBlockAt(localPos, blockType);
+    }
+    
     file.close();
 
     meshGenerated = false; // force regeneration du mesh
